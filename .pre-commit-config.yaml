@@ -1,0 +1,24 @@
+# Lancé avant chaque commit. Si une étape échoue, le commit est refusé.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (style et erreurs)
+        entry: ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff (mise en forme)
+        entry: ruff format
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy (typage)
+        entry: mypy
+        language: system
+        pass_filenames: false
+      - id: pytest
+        name: pytest (tests)
+        entry: pytest -q
+        language: system
+        pass_filenames: false
