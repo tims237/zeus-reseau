@@ -18,6 +18,7 @@ class Emplacement(BaseModel):
     site: str  # obligatoire : pas de valeur par défaut
     batiment: str | None = None  # facultatif : vaut None (rien) si on ne le donne pas
     etage: int | None = Field(default=None, ge=0)  # ge=0 : 0 (le RDC) ou plus
+    salle: str | None = None  # facultatif : la salle, par exemple "SalleServeur"
     baie: str | None = None
     position_u: int | None = Field(default=None, ge=1, le=60)  # entre 1 et 60
 

@@ -12,9 +12,9 @@ ZeusRéseau écoute le réseau d'une entreprise depuis un serveur Linux, dessine
 - [x] Contrôles avant commit (pre-commit : ruff, mypy, pytest)
 - [x] Intégration continue (GitHub Actions)
 - [x] Modèles Equipement, Interface et TypeEquipement
-- [ ] Modèles Lien et Incident
+- [x] Modèles Lien et Incident
 - [ ] B1 Découverte des équipements
-- [ ] B13 Inventaire des emplacements (lecture de sysLocation)
+- [x] B13 Inventaire des emplacements (lecture de sysLocation)
 
 Les phases suivantes ajouteront l'alerte et la vérification, la carte 2D et 3D, puis l'IA.
 
