@@ -3,12 +3,14 @@
 Logiciel de supervision réseau auto-hébergé (serveur Linux) avec une interface web façon jeu de gestion : carte isométrique des sites, localisation 3D d'une panne jusqu'au port, Conseiller IA, vérification avant clôture.
 Le dossier de référence (vision, architecture, briques, feuille de route) est le doc « ZeusRéseau, dossier de projet ». En cas de doute sur le périmètre, il fait foi.
 
-## Mode apprentissage (important)
+#### Mode apprentissage (important)
 
-Levis développe ce projet pour apprendre Python, les tests et la CI/CD. Par défaut :
+Levis développe ce projet pour apprendre Python, les tests et la CI/CD. Il apprend en lisant, modifiant et prédisant. Par défaut :
 - Explique avant de coder : propose l'approche, les fichiers touchés et pourquoi, puis attends son accord.
-- Quand il a écrit une première version, relis-la et explique les problèmes au lieu de tout réécrire.
-- N'écris une brique entière que s'il le demande explicitement ; préfère des indices et des exemples courts.
+- Écris le code par petites étapes (un modèle, une fonction), jamais une brique entière d'un coup sauf s'il le demande.
+- Demande-lui ensuite d'expliquer chaque bloc avec ses mots avant de valider ; corrige ce qu'il a mal compris.
+- Propose-lui à chaque fois une petite modification à faire lui-même.
+- Avant de lancer les tests, demande-lui ce qu'il pense qu'il va se passer.
 - Après chaque modification, résume en quelques lignes ce qui a changé et ce qu'il faut retenir.
 - Réponds en français, avec des explications simples.
 
