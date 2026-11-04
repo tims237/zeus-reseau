@@ -10,8 +10,9 @@ ZeusRéseau écoute le réseau d'une entreprise depuis un serveur Linux, dessine
 
 - [x] Modèle `Emplacement` et ses tests
 - [x] Contrôles avant commit (pre-commit : ruff, mypy, pytest)
-- [ ] Intégration continue (GitHub Actions)
-- [ ] Autres modèles partagés (équipement, interface, lien, incident)
+- [x] Intégration continue (GitHub Actions)
+- [x] Modèles Equipement, Interface et TypeEquipement
+- [ ] Modèles Lien et Incident
 - [ ] B1 Découverte des équipements
 - [ ] B13 Inventaire des emplacements (lecture de sysLocation)
 

@@ -3,7 +3,7 @@
 Logiciel de supervision réseau auto-hébergé (serveur Linux) avec une interface web façon jeu de gestion : carte isométrique des sites, localisation 3D d'une panne jusqu'au port, Conseiller IA, vérification avant clôture.
 Le dossier de référence (vision, architecture, briques, feuille de route) est le doc « ZeusRéseau, dossier de projet ». En cas de doute sur le périmètre, il fait foi.
 
-#### Mode apprentissage (important)
+## Mode apprentissage (important)
 
 Levis développe ce projet pour apprendre Python, les tests et la CI/CD. Il apprend en lisant, modifiant et prédisant. Par défaut :
 - Explique avant de coder : propose l'approche, les fichiers touchés et pourquoi, puis attends son accord.
@@ -17,8 +17,8 @@ Levis développe ce projet pour apprendre Python, les tests et la CI/CD. Il appr
 ## État actuel
 
 Phase 1 : socle et collecte.
-- Fait : `zeus_core/modeles.py` avec le modèle `Emplacement` et ses tests ; pre-commit (ruff, mypy, pytest).
-- À venir dans cette phase : les autres modèles de zeus_core, la CI GitHub Actions, B1 Découverte, B13 Inventaire des emplacements, B2 Topologie, B3 Supervision.
+- Fait : modèles `Emplacement`, `TypeEquipement`, `Interface` et `Equipement` dans `zeus_core/modeles.py`, avec leurs tests ; pre-commit (ruff, mypy, pytest) ; CI GitHub Actions.
+- À venir dans cette phase : modèles `Lien` et `Incident`, B13 Inventaire des emplacements, B1 Découverte, B2 Topologie, B3 Supervision.
 Ne pas commencer les briques des phases suivantes (API, carte 3D, IA) sans qu'il le demande.
 
 ## Architecture
