@@ -17,8 +17,8 @@ Levis développe ce projet pour apprendre Python, les tests et la CI/CD. Il appr
 ## État actuel
 
 Phase 1 : socle et collecte.
-- Fait : les 6 modèles de `zeus_core/modeles.py` (Emplacement, TypeEquipement, Interface, Equipement, Lien, Incident) avec leurs tests ; pre-commit ; CI GitHub Actions ; B13 Inventaire (`briques/b13_inventaire/`, lecture de sysLocation).
-- À venir dans cette phase : B1 Découverte, B2 Topologie, B3 Supervision, labo de faux équipements.
+- Fait : les 6 modèles de `zeus_core/modeles.py` (Emplacement, TypeEquipement, Interface, Equipement, Lien, Incident) avec leurs tests ; pre-commit ; CI GitHub Actions ; B13 Inventaire (`briques/b13_inventaire/`, lecture de sysLocation) ; B1 Découverte (`briques/b01_decouverte/`, scan d'une plage via une sonde injectée).
+- À venir dans cette phase : B2 Topologie, B3 Supervision, labo de faux équipements.
 Ne pas commencer les briques des phases suivantes (API, carte 3D, IA) sans qu'il le demande.
 
 ## Architecture

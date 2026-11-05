@@ -13,7 +13,7 @@ ZeusRéseau écoute le réseau d'une entreprise depuis un serveur Linux, dessine
 - [x] Intégration continue (GitHub Actions)
 - [x] Modèles Equipement, Interface et TypeEquipement
 - [x] Modèles Lien et Incident
-- [ ] B1 Découverte des équipements
+- [x] B1 Découverte des équipements
 - [x] B13 Inventaire des emplacements (lecture de sysLocation)
 
 Les phases suivantes ajouteront l'alerte et la vérification, la carte 2D et 3D, puis l'IA.
