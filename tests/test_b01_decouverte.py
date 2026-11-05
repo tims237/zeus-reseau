@@ -56,6 +56,7 @@ def test_plage_trop_grande_refusee() -> None:
         ("UniFi U6-Pro", TypeEquipement.BORNE_WIFI),
         ("AXIS P3265-LVE Network Camera", TypeEquipement.CAMERA),
         ("Quelque chose d'inconnu", TypeEquipement.INCONNU),
+        ("Meraki MR46", TypeEquipement.BORNE_WIFI),
     ],
 )
 def test_deviner_type(descr: str, attendu: TypeEquipement) -> None:
