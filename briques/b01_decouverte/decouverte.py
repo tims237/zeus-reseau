@@ -58,6 +58,7 @@ MOTS_CLES: list[tuple[str, TypeEquipement]] = [
     ("axis", TypeEquipement.CAMERA),
     ("isr", TypeEquipement.ROUTEUR),
     ("router", TypeEquipement.ROUTEUR),
+    ("meraki", TypeEquipement.BORNE_WIFI),
 ]
 
 
