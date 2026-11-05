@@ -1,4 +1,4 @@
-"""Tests de B2 Topologie, avec une fausse sonde LLDP.
+"""Tests de B2 Topologie, avec une fausse sondes LLDP.
 
 Le petit réseau simulé :
 
@@ -60,7 +60,7 @@ def test_le_lien_garde_les_bons_ports() -> None:
 
 
 def test_equipement_sans_voisin() -> None:
-    # Un équipement que la sonde ne connaît pas n'ajoute aucun câble.
+    # Un équipement que la sondes ne connaît pas n'ajoute aucun câble.
     assert construire_liens(["INCONNU"], FausseSondeLLDP()) == []
 
 

@@ -87,3 +87,31 @@ class Incident(BaseModel):
         mais la valeur est recalculée à chaque lecture à partir de clos_le.
         """
         return self.clos_le is None
+
+
+class Releve(BaseModel):
+    """Les « constantes » d'un équipement à un instant donné, prises par B3 Supervision."""
+
+    equipement_id: str
+    horodatage: datetime  # le moment du relevé
+    repond: bool  # False si l'équipement n'a pas répondu du tout
+    interfaces: dict[str, bool] = Field(default_factory=dict)  # nom du port -> up (True) ou down
+    cpu: float | None = Field(default=None, ge=0, le=100)  # en pourcentage, si connu
+    latence_ms: float | None = Field(default=None, ge=0)  # temps de réponse, si connu
+
+
+class Evenement(BaseModel):
+    """Un changement ou un dépassement repéré par B3, qui pourra devenir un Incident."""
+
+    equipement_id: str
+    interface: str | None = None  # le port concerné, s'il y en a un
+    nature: Literal[
+        "port_down",  # un port est tombé
+        "port_up",  # un port est revenu
+        "injoignable",  # l'équipement ne répond plus
+        "joignable",  # l'équipement répond de nouveau
+        "cpu_eleve",  # le CPU dépasse le seuil
+        "latence_elevee",  # la latence dépasse le seuil
+    ]
+    horodatage: datetime
+    valeur: float | None = None  # la mesure en cause, pour cpu_eleve et latence_elevee

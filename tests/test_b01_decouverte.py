@@ -1,4 +1,4 @@
-"""Tests de B1 Découverte, avec une fausse sonde : aucun vrai réseau n'est utilisé."""
+"""Tests de B1 Découverte, avec une fausse sondes : aucun vrai réseau n'est utilisé."""
 
 import pytest
 

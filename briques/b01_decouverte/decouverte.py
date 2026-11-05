@@ -3,9 +3,9 @@
 Le principe : pour chaque adresse d'une plage (par exemple 10.3.0.0/24), on demande
 « tu es là ? » (ping), puis « qui es-tu ? » (lecture SNMP de sysName et sysDescr).
 
-La découverte ne parle jamais directement au réseau : elle passe par une « sonde ».
-- En vrai, la sonde enverra de vrais pings et de vraies requêtes SNMP.
-- Dans les tests, on lui donne une FAUSSE sonde, qui répond ce qu'on veut.
+La découverte ne parle jamais directement au réseau : elle passe par une « sondes ».
+- En vrai, la sondes enverra de vrais pings et de vraies requêtes SNMP.
+- Dans les tests, on lui donne une FAUSSE sondes, qui répond ce qu'on veut.
 Le code de decouvrir() ne change pas : c'est l'injection de dépendance.
 """
 
@@ -19,7 +19,7 @@ class Sonde(Protocol):
     """Ce dont la découverte a besoin pour interroger une adresse.
 
     Un Protocol décrit des méthodes sans dire comment elles marchent : n'importe
-    quelle classe qui a ces deux méthodes peut servir de sonde.
+    quelle classe qui a ces deux méthodes peut servir de sondes.
     """
 
     def ping(self, ip: str) -> bool:
