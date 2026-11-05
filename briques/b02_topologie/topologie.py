@@ -4,8 +4,8 @@ Chaque switch ou routeur sait qui est branché sur ses ports, grâce au protocol
 (ou CDP chez Cisco) : il échange régulièrement une petite carte d'identité avec ses
 voisins directs. B2 demande ces voisins à chaque équipement et en tire les câbles.
 
-Comme B1, B2 passe par une sonde : une vraie sonde lira LLDP en SNMP, une fausse
-sonde suffit pour les tests.
+Comme B1, B2 passe par une sondes : une vraie sondes lira LLDP en SNMP, une fausse
+sondes suffit pour les tests.
 """
 
 from typing import Protocol

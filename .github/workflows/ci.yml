@@ -29,3 +29,6 @@ jobs:
 
       - name: Tests (pytest)
         run: pytest
+
+      - name: Tests du labo (vraie sondes SNMP contre snmpsim)
+        run: pytest -m labo

@@ -6,16 +6,26 @@ build-backend = "setuptools.build_meta"
 name = "zeus-reseau"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.7"]
+dependencies = ["pydantic>=2.7", "pysnmp>=7.1"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.6", "mypy>=1.11", "pre-commit>=3.7"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.7",
+    "snmpsim>=1.1",  # le faux switch du labo
+    "pysmi>=1.5",  # nécessaire à snmpsim
+]
 
 [tool.setuptools.packages.find]
-include = ["zeus_core*", "briques*"]
+include = ["zeus_core*", "briques*", "sondes*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Les tests du labo (snmpsim) ne tournent pas par défaut : `pytest -m labo` pour les lancer.
+addopts = "-m 'not labo'"
+markers = ["labo: tests qui démarrent le faux switch snmpsim"]
 
 [tool.ruff]
 line-length = 100
@@ -27,4 +37,9 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.mypy]
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["zeus_core", "briques"]
+files = ["zeus_core", "briques", "sondes"]
+
+[[tool.mypy.overrides]]
+# pysnmp ne fournit pas ses types : mypy ne le vérifie pas.
+module = ["pysnmp.*"]
+ignore_missing_imports = true
