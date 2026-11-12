@@ -57,6 +57,7 @@ def test_plage_trop_grande_refusee() -> None:
         ("AXIS P3265-LVE Network Camera", TypeEquipement.CAMERA),
         ("Quelque chose d'inconnu", TypeEquipement.INCONNU),
         ("Meraki MR46", TypeEquipement.BORNE_WIFI),
+        ("srlinux", TypeEquipement.ROUTEUR),
     ],
 )
 def test_deviner_type(descr: str, attendu: TypeEquipement) -> None:
