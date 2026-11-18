@@ -1,0 +1,17 @@
+# Le réseau virtuel du labo ZeusRéseau (niveau 3), décrit pour Containerlab.
+# Deux routeurs Nokia SR Linux, reliés par un câble : le datacenter (rt-dc) et Lille (rt-lil).
+# Lancer :   containerlab deploy -t zeus.clab.yml
+# Éteindre : containerlab destroy -t zeus.clab.yml
+name: zeus
+
+topology:
+  nodes:
+    rt-dc:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+    rt-lil:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+
+  links:
+    - endpoints: ["rt-dc:e1-1", "rt-lil:e1-1"]

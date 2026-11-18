@@ -1,4 +1,4 @@
-"""Une vraie sondes SNMP, utilisable par B1 Découverte et B3 Supervision.
+"""Une vraie sonde SNMP, utilisable par B1 Découverte et B3 Supervision.
 
 Elle pose de vraies questions SNMP à un équipement (avec la bibliothèque pysnmp).
 Dans le labo, c'est snmpsim qui lui répond, en imitant un switch Cisco.

@@ -6,3 +6,10 @@ __pycache__/
 .ruff_cache/
 .idea/
 .env
+
+# Containerlab : dossiers et sauvegardes créés au lancement du labo
+clab-*/
+.*.clab.yml.bak
+
+# Scripts d'essai personnels, à ne pas versionner
+essai_*.py

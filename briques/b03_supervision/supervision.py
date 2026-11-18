@@ -7,8 +7,8 @@ son CPU, sa latence. Trois étapes :
 2. comparer()        : trouver ce qui a changé depuis le relevé précédent
 3. verifier_seuils() : repérer ce qui est trop lent ou trop chargé
 
-Comme B1 et B2, B3 passe par une sondes : la vraie interroge le réseau en SNMP
-(sondes/sonde_snmp.py), une fausse sondes suffit pour les tests.
+Comme B1 et B2, B3 passe par une sonde : la vraie interroge le réseau en SNMP
+(sondes/sonde_snmp.py), une fausse sonde suffit pour les tests.
 """
 
 from datetime import datetime
