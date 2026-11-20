@@ -97,12 +97,9 @@ class SondeSNMP:
         return None
 
     def latence_ms(self, equipement: str) -> float | None:
-        """Mesure le temps de réponse SNMP, en millisecondes."""
+        """Mesure le temps de réponse SNMP, en millisecondes, ou None s'il ne répond pas."""
         ip = self.adresses.get(equipement, equipement)
-        debut = time.perf_counter()
-        if self._get(ip, [SYS_NAME]) is None:
-            return None
-        return round((time.perf_counter() - debut) * 1000, 1)
+        return asyncio.run(self._latence_async(ip))
 
     # --- Pour B2 Topologie (reçoit un nom d'équipement) --------------------------
 
@@ -150,6 +147,36 @@ class SondeSNMP:
             if erreur or statut:
                 return None
             return {str(oid): str(valeur) for oid, valeur in resultats}
+        finally:
+            moteur.close_dispatcher()
+
+    async def _latence_async(self, ip: str) -> float | None:
+        # Démarrer le moteur SNMP et poser sa première question prend plusieurs centaines
+        # de millisecondes : pysnmp se prépare, ce qui n'a rien à voir avec le réseau.
+        # On pose donc une première question, sans chronomètre, pour l'échauffer ;
+        # seule la seconde est chronométrée : c'est elle, le vrai aller-retour réseau.
+        moteur = SnmpEngine()
+        try:
+            cible = await UdpTransportTarget.create(
+                (ip, self.port), timeout=self.delai_s, retries=0
+            )
+
+            async def demander() -> bool:
+                erreur, statut, _, _ = await get_cmd(
+                    moteur,
+                    CommunityData(self.communaute),
+                    cible,
+                    ContextData(),
+                    ObjectType(ObjectIdentity(SYS_NAME)),
+                )
+                return not (erreur or statut)
+
+            if not await demander():  # l'échauffement ; s'il échoue, l'équipement est muet
+                return None
+            debut = time.perf_counter()
+            if not await demander():
+                return None
+            return round((time.perf_counter() - debut) * 1000, 1)
         finally:
             moteur.close_dispatcher()
 
