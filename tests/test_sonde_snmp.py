@@ -48,3 +48,31 @@ def test_port_local_inconnu_garde_son_numero() -> None:
 
 def test_ligne_mal_formee_ignoree() -> None:
     assert assembler_voisins_lldp(PORTS_LOCAUX, {}, {"1": "rt-lil"}, {}, {}) == []
+
+
+def test_port_voisin_annonce_par_adresse_mac_remplace_par_sa_description() -> None:
+    # Bug trouvé sur le labo : lldpd annonce son port par son adresse MAC (sous-type 3).
+    # Certains octets ressemblent à des lettres (« zØu »), et passaient pour un nom de port.
+    # Le sous-type dit ce que contient l'identifiant : c'est lui qu'il faut croire.
+    voisins = assembler_voisins_lldp(
+        PORTS_LOCAUX,
+        {},
+        {"0.2.1": "ap-lil-01"},
+        {"0.2.1": "zØu"},
+        {"0.2.1": "eth1"},
+        sous_types_voisins={"0.2.1": "3"},
+    )
+    assert voisins[0]["port_voisin"] == "eth1"
+
+
+def test_port_voisin_annonce_par_nom_garde_son_nom() -> None:
+    # Sous-type 5 : l'identifiant est le nom du port (cas des SR Linux).
+    voisins = assembler_voisins_lldp(
+        PORTS_LOCAUX,
+        {},
+        {"0.1.1": "rt-lil"},
+        {"0.1.1": "ethernet-1/1"},
+        {"0.1.1": "lien vers Lille"},
+        sous_types_voisins={"0.1.1": "5"},
+    )
+    assert voisins[0]["port_voisin"] == "ethernet-1/1"

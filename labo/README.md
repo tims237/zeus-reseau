@@ -16,7 +16,7 @@ Un réseau d'entraînement simulé, pour tester le vrai code sans vrai réseau d
 
 - son nom, son modèle et son emplacement (`LIL/BatA/E2/SalleServeur/B2/U14`) ;
 - trois ports : Gi1/0/1 et Gi1/0/11 up, **Gi1/0/12 down** ;
-- ses voisins LLDP : `rt-lil` derrière Gi1/0/1, `AP-LIL-01` derrière Gi1/0/11, et `rt-dc` derrière le port d'administration mgmt0 (que la sonde doit ignorer).
+- ses voisins LLDP : `rt-lil` derrière Gi1/0/1, `AP-LIL-01` derrière Gi1/0/11 (qui annonce son port par adresse MAC, comme une vraie borne), et `rt-dc` derrière le port d'administration mgmt0 (que la sonde doit ignorer).
 
 Les lignes sont rangées dans l'ordre des OID (snmpsim l'exige) : c'est pour ça que les lignes LLDP, en `1.0.8802…`, sont en haut.
 
@@ -173,4 +173,5 @@ quit
 - LLDP garde un voisin disparu en mémoire environ deux minutes.
 - Une mesure peut mentir : `latence_ms` comptait le démarrage de pysnmp (500 ms) au lieu du réseau (quelques ms), et créait une fausse alerte sur chaque routeur.
 - Les adresses IP changent : un nom d'équipement associé à la mauvaise IP fait croire à un routeur qu'il est son propre voisin. Seul B1, qui lit le vrai nom à chaque adresse, fait foi.
+- Un identifiant de port LLDP n'est pas toujours un nom : la borne (lldpd) annonce son adresse MAC, dont les octets ressemblaient à du texte (`zØu`). La sonde se fie maintenant au sous-type (`lldpRemPortIdSubtype` : 3 = adresse MAC) et prend alors la description du port.
 - Les mots-clés de B1 ne connaîtront jamais tous les modèles : c'est le rôle futur de B17 Classification.
