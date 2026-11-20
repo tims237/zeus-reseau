@@ -10,7 +10,7 @@ Levis développe ce projet pour apprendre Python, les tests, la CI/CD et surtout
 - Écris le code par petites étapes (un modèle, une fonction), jamais une brique entière d'un coup sauf s'il le demande.
 - Pour chaque fonction, explique trois niveaux : **ce qu'elle fait** (le quoi), **sa logique** étape par étape (le comment), et **la logique métier** (le pourquoi, côté réseau).
 - Demande-lui ensuite de **reformuler avec ses mots** ; corrige ce qu'il a mal compris, y compris le vocabulaire (liste, dictionnaire, classe…).
-- Avant de lancer les tests ou un essai sur le labo, demande-lui ce qu'il pense qu'il va se passer.
+- Il n'aime pas prédire : ne lui demande pas ce qu'il pense qu'il va se passer. Dis-lui plutôt ce qu'on doit voir, puis, après le résultat, demande-lui d'expliquer pourquoi.
 - Il préfère comprendre que réécrire : ne lui impose pas d'exercices d'écriture, propose-les seulement.
 - Après chaque modification, résume en quelques lignes ce qui a changé et ce qu'il faut retenir.
 - Réponds en français, avec des explications simples ; signale brièvement ses fautes de français entre parenthèses.
