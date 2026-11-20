@@ -1,7 +1,7 @@
-"""Tests du labo : la vraie sondes SNMP face à un faux switch simulé par snmpsim.
+"""Tests du labo : la vraie sonde SNMP face à un faux switch simulé par snmpsim.
 
 Ces tests démarrent snmpsim, qui imite le switch SW-LIL-02 décrit dans
-labo/snmpsim/sw-lil-02.snmprec, puis l'interrogent avec la vraie sondes.
+labo/snmpsim/sw-lil-02.snmprec, puis l'interrogent avec la vraie sonde.
 
 Ils sont marqués « labo » et ne tournent pas avec un simple `pytest` (ils prennent
 quelques secondes). Pour les lancer : `pytest -m labo`. La CI les lance à part.
@@ -21,10 +21,11 @@ from pathlib import Path
 import pytest
 
 from briques.b01_decouverte import decouvrir
+from briques.b02_topologie import construire_liens
 from briques.b03_supervision import relever
 from briques.b13_inventaire import lire_syslocation
 from sondes.sonde_snmp import SondeSNMP
-from zeus_core.modeles import TypeEquipement
+from zeus_core.modeles import Lien, TypeEquipement
 
 DOSSIER_DONNEES = Path(__file__).parent.parent / "labo" / "snmpsim"
 COMMUNAUTE = "sw-lil-02"  # snmpsim choisit le fichier d'après la communauté
@@ -91,7 +92,7 @@ def test_sysinfo_du_faux_switch(sonde: SondeSNMP) -> None:
 
 @pytest.mark.labo
 def test_b1_decouvre_le_faux_switch(sonde: SondeSNMP) -> None:
-    # B1, avec la VRAIE sondes : le même code que dans les tests à fausse sondes.
+    # B1, avec la VRAIE sonde : le même code que dans les tests à fausse sonde.
     trouves = decouvrir("127.0.0.1/32", sonde)
     assert [e.id for e in trouves] == ["SW-LIL-02"]
     assert trouves[0].type is TypeEquipement.SWITCH
@@ -111,3 +112,40 @@ def test_b3_voit_le_port_12_down(sonde: SondeSNMP) -> None:
     assert releve.repond
     assert releve.interfaces["Gi1/0/1"] is True
     assert releve.interfaces["Gi1/0/12"] is False
+
+
+@pytest.mark.labo
+def test_la_sonde_lit_les_voisins_lldp(sonde: SondeSNMP) -> None:
+    voisins = sonde.voisins_lldp("SW-LIL-02")
+    # Le voisin vu par le port d'administration (mgmt0) est ignoré.
+    assert voisins == [
+        {"port_local": "Gi1/0/1", "voisin": "rt-lil", "port_voisin": "ethernet-1/2"},
+        {"port_local": "Gi1/0/11", "voisin": "AP-LIL-01", "port_voisin": "eth0"},
+    ]
+
+
+@pytest.mark.labo
+def test_b2_construit_les_liens_du_faux_switch(sonde: SondeSNMP) -> None:
+    # B2, avec la VRAIE sonde : le même code que dans les tests à fausse sonde.
+    liens = construire_liens(["SW-LIL-02"], sonde)
+    assert liens == [
+        Lien(
+            equipement_a="SW-LIL-02",
+            interface_a="Gi1/0/1",
+            equipement_b="rt-lil",
+            interface_b="ethernet-1/2",
+        ),
+        Lien(
+            equipement_a="SW-LIL-02",
+            interface_a="Gi1/0/11",
+            equipement_b="AP-LIL-01",
+            interface_b="eth0",
+        ),
+    ]
+
+
+@pytest.mark.labo
+def test_equipement_muet_n_a_aucun_voisin(sonde: SondeSNMP) -> None:
+    # Une mauvaise communauté : l'équipement ne répond pas, la sonde renvoie une liste vide.
+    muette = SondeSNMP(communaute="inconnue", port=sonde.port, delai_s=0.5)
+    assert muette.voisins_lldp("127.0.0.1") == []

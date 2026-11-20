@@ -1,4 +1,4 @@
-"""Une vraie sonde SNMP, utilisable par B1 Découverte et B3 Supervision.
+"""Une vraie sonde SNMP, utilisable par B1 Découverte, B2 Topologie et B3 Supervision.
 
 Elle pose de vraies questions SNMP à un équipement (avec la bibliothèque pysnmp).
 Dans le labo, c'est snmpsim qui lui répond, en imitant un switch Cisco.
@@ -30,6 +30,19 @@ SYS_NAME = "1.3.6.1.2.1.1.5.0"
 SYS_LOCATION = "1.3.6.1.2.1.1.6.0"
 IF_DESCR = "1.3.6.1.2.1.2.2.1.2"  # le nom de chaque port (Gi1/0/12…)
 IF_OPER_STATUS = "1.3.6.1.2.1.2.2.1.8"  # l'état de chaque port : 1 = up, 2 = down
+
+# LLDP-MIB : ce que l'équipement sait de ses voisins directs (la norme IEEE 802.1AB).
+# Ses ports à lui, numérotés par LLDP (lldpLocPortTable) :
+LLDP_LOC_PORT_ID = "1.0.8802.1.1.2.1.3.7.1.3"  # le nom du port, par exemple ethernet-1/1
+LLDP_LOC_PORT_DESC = "1.0.8802.1.1.2.1.3.7.1.4"  # sa description, en secours
+# Ses voisins (lldpRemTable). Chaque ligne a pour index « horodatage.port local.numéro » :
+LLDP_REM_PORT_ID = "1.0.8802.1.1.2.1.4.1.1.7"  # le port du voisin
+LLDP_REM_PORT_DESC = "1.0.8802.1.1.2.1.4.1.1.8"  # sa description, en secours
+LLDP_REM_SYS_NAME = "1.0.8802.1.1.2.1.4.1.1.9"  # le nom du voisin, par exemple rt-lil
+
+# Les ports d'administration (mgmt0…) sont reliés à un réseau à part, pas au réseau
+# supervisé : on ignore les voisins vus par eux, sinon B2 inventerait de faux câbles.
+PORTS_ADMINISTRATION = ("mgmt",)
 
 
 class SondeSNMP:
@@ -91,6 +104,22 @@ class SondeSNMP:
             return None
         return round((time.perf_counter() - debut) * 1000, 1)
 
+    # --- Pour B2 Topologie (reçoit un nom d'équipement) --------------------------
+
+    def voisins_lldp(self, equipement: str) -> list[dict[str, str]]:
+        """Renvoie les voisins LLDP de l'équipement, ou une liste vide s'il ne répond pas."""
+        ip = self.adresses.get(equipement, equipement)
+        noms = self._walk(ip, LLDP_REM_SYS_NAME)
+        if not noms:
+            return []  # pas de réponse, ou aucun voisin
+        return assembler_voisins_lldp(
+            ports_locaux=self._walk(ip, LLDP_LOC_PORT_ID) or {},
+            descriptions_locales=self._walk(ip, LLDP_LOC_PORT_DESC) or {},
+            noms_voisins=noms,
+            ports_voisins=self._walk(ip, LLDP_REM_PORT_ID) or {},
+            descriptions_voisins=self._walk(ip, LLDP_REM_PORT_DESC) or {},
+        )
+
     # --- La mécanique SNMP --------------------------------------------------------
 
     def _get(self, ip: str, oids: list[str]) -> dict[str, str] | None:
@@ -98,7 +127,11 @@ class SondeSNMP:
         return asyncio.run(self._get_async(ip, oids))
 
     def _walk(self, ip: str, racine: str) -> dict[str, str] | None:
-        """Parcourt toute une table (par exemple tous les ports) ; renvoie {index: valeur}."""
+        """Parcourt toute une table (par exemple tous les ports) ; renvoie {index: valeur}.
+
+        L'index est la fin de l'OID, après la racine : « 12 » pour le port 12 de la table
+        des ports, « 0.1.1 » pour une ligne de la table des voisins LLDP.
+        """
         return asyncio.run(self._walk_async(ip, racine))
 
     async def _get_async(self, ip: str, oids: list[str]) -> dict[str, str] | None:
@@ -138,8 +171,53 @@ class SondeSNMP:
                 if erreur or statut:
                     return None
                 for oid, valeur in resultats:
-                    index = str(oid).rsplit(".", 1)[-1]  # « …2.2.1.8.12 » -> « 12 »
+                    index = str(oid).removeprefix(racine + ".")  # « …2.2.1.8.12 » -> « 12 »
                     table[index] = str(valeur)
             return table
         finally:
             moteur.close_dispatcher()
+
+
+def assembler_voisins_lldp(
+    ports_locaux: dict[str, str],
+    descriptions_locales: dict[str, str],
+    noms_voisins: dict[str, str],
+    ports_voisins: dict[str, str],
+    descriptions_voisins: dict[str, str],
+) -> list[dict[str, str]]:
+    """Relie les tables LLDP lues en SNMP, et renvoie un voisin par ligne.
+
+    Les tables des voisins ont pour index « horodatage.port local.numéro » ; le
+    « port local » est un numéro qui renvoie à la table des ports de l'équipement.
+    Cette fonction ne touche pas le réseau : on peut la tester avec de simples dictionnaires.
+    """
+    voisins: list[dict[str, str]] = []
+    for index, nom in sorted(noms_voisins.items()):
+        morceaux = index.split(".")
+        if len(morceaux) != 3:
+            continue  # ligne mal formée : on l'ignore plutôt que de planter
+        numero_port_local = morceaux[1]
+        port_local = _texte_lisible(
+            ports_locaux.get(numero_port_local),
+            descriptions_locales.get(numero_port_local),
+            numero_port_local,
+        )
+        if port_local.startswith(PORTS_ADMINISTRATION):
+            continue
+        port_voisin = _texte_lisible(
+            ports_voisins.get(index), descriptions_voisins.get(index), "inconnu"
+        )
+        voisins.append({"port_local": port_local, "voisin": nom, "port_voisin": port_voisin})
+    return voisins
+
+
+def _texte_lisible(*candidats: str | None) -> str:
+    """Renvoie le premier candidat non vide et lisible.
+
+    Un identifiant de port LLDP n'est pas toujours un nom : ce peut être une adresse MAC,
+    en octets bruts. Dans ce cas, on passe à la description, puis au dernier recours.
+    """
+    for candidat in candidats:
+        if candidat and candidat.isprintable():
+            return candidat
+    return candidats[-1] or ""
