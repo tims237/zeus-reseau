@@ -24,13 +24,12 @@ Levis développe ce projet pour apprendre Python, les tests, la CI/CD et surtout
 
 ## État actuel
 
-Phase 1 : socle et collecte des données, presque terminée.
+Phase 1 : socle et collecte des données, terminée et validée sur le labo à quatre équipements.
 - Fait : les modèles de `zeus_core/modeles.py` (Emplacement, TypeEquipement, Interface, Equipement, Lien, Incident, Releve, Evenement) ; pre-commit ; CI GitHub Actions ; B1 Découverte (`briques/b01_decouverte/`) ; B13 Inventaire (`briques/b13_inventaire/`) ; B2 Topologie (`briques/b02_topologie/`) ; B3 Supervision (`briques/b03_supervision/`) ; vraie sonde SNMP (`sondes/sonde_snmp.py`, y compris la lecture des voisins LLDP) testée contre snmpsim ; labo Containerlab (`labo/containerlab/`) : `rt-dc` → `rt-lil` → `sw-lil` (trois Nokia SR Linux) → `ap-lil-01` (borne simulée, Alpine Linux avec lldpd et snmpd).
-- Validé sur Containerlab : B1 (les deux routeurs trouvés, de type `routeur`), B13 (sysLocation lu et décodé), B2 (un seul câble `rt-dc` ↔ `rt-lil`, le voisin vu par `mgmt0` ignoré), B3 (une coupure côté Lille donne exactement deux `port_down`, sur `rt-lil` et sur `rt-dc`, et aucune fausse alerte de latence depuis la correction de `latence_ms`).
-- Reste à faire dans cette phase :
-  1. valider le labo à quatre équipements (B1 trouve les quatre, B2 trois câbles), puis la panne en cascade avec `equipements_injoignables` (procédure dans `labo/README.md`). Limite : dans Containerlab, `mgmt0` garde chaque équipement joignable ; la panne est donc donnée à la fonction, sur la vraie topologie ;
-  2. plus tard dans la sonde : CPU en SNMP, vrai ping ICMP, SNMP v3, et distinguer un port coupé par l'admin (`port-admin-disabled`) d'une vraie panne.
-- Idée retenue pour la suite : regrouper les deux `port_down` d'un même câble (ses deux bouts, connus grâce à B2) en un seul incident, c'est la corrélation.
+- Validé sur Containerlab : B1 (les deux routeurs trouvés, de type `routeur`), B13 (sysLocation lu et décodé), B2 (un seul câble `rt-dc` ↔ `rt-lil`, le voisin vu par `mgmt0` ignoré), B3 (une coupure côté Lille donne exactement deux `port_down`, sur `rt-lil` et sur `rt-dc`, et aucune fausse alerte de latence depuis la correction de `latence_ms`) ; labo à quatre : B1 trouve les quatre équipements (`ap-lil-01` en `borne-wifi`), B2 les trois câbles (port de la borne lu `eth1`), et `equipements_injoignables` donne `{sw-lil, ap-lil-01}` si `rt-lil` tombe, `{ap-lil-01}` si `sw-lil` tombe.
+- Limite connue du labo : dans Containerlab, `mgmt0` garde chaque équipement joignable ; la panne en cascade est donc donnée à `equipements_injoignables`, sur la vraie topologie lue par B2.
+- Améliorations de la sonde restant à faire : CPU en SNMP, vrai ping ICMP, SNMP v3, et distinguer un port coupé par l'admin (`port-admin-disabled`) d'une vraie panne.
+- Prochaine étape proposée, à décider avec Levis : regrouper les deux `port_down` d'un même câble (ses deux bouts, connus grâce à B2) en un seul incident, c'est la corrélation.
 - Idée retenue pour plus tard : **B17 Classification** des équipements inconnus (numéro de fabricant du sysObjectID, capacités LLDP, nombre de ports → type + confiance + validation par l'ingénieur ; machine learning en phase 4). Ne pas la commencer avant la fin de la phase 1.
 Ne pas commencer les briques des phases suivantes (API, carte 3D, IA) sans qu'il le demande.
 

@@ -61,7 +61,7 @@ rt-dc ──e1-1────e1-1── rt-lil ──e1-2────e1-1── s
 ```
 
 - `rt-dc`, `rt-lil` et `sw-lil` sont des **Nokia SR Linux**, de vrais systèmes de routeur : ils parlent SNMP et LLDP comme en entreprise. Le switch est lui aussi un SR Linux : B1 le classe donc en `routeur`, un cas à garder pour B17.
-- `ap-lil-01` est un petit **Alpine Linux** qui joue une borne : `lldpd` l'annonce en LLDP, `snmpd` répond en SNMP. La configuration SNMP est dans `containerlab/ap-lil-01/snmpd.conf`. Comme beaucoup de vraies bornes, elle annonce son port en LLDP par son adresse MAC. Sa description contient « access point », pour que B1 la classe en `borne_wifi`.
+- `ap-lil-01` est un petit **Alpine Linux** qui joue une borne : `lldpd` l'annonce en LLDP, `snmpd` répond en SNMP. La configuration SNMP est dans `containerlab/ap-lil-01/snmpd.conf`. Comme beaucoup de vraies bornes, elle annonce son port en LLDP par son adresse MAC. Sa description contient « access point », pour que B1 la classe en `borne-wifi`.
 
 ### Préparer le poste (une seule fois)
 
@@ -115,8 +115,8 @@ SNMP v2c est actif d'origine sur les SR Linux, avec la communauté `public` ; la
 - [x] **Coupure** : quand Lille coupe son port, celui de `rt-dc` passe down, et la sonde le voit (`etat_interfaces`).
 - [x] **B3** : une coupure côté Lille, passée par `relever()` puis `comparer()`, donne exactement deux `port_down` (`rt-lil` et `rt-dc`, sur `ethernet-1/1`) et aucune alerte de seuil.
 - [x] **B2** : `construire_liens` trouve un seul câble, `rt-dc ethernet-1/1` ↔ `rt-lil ethernet-1/1` ; le voisin vu par `mgmt0` est ignoré.
-- [ ] **Réseau à quatre équipements** : B1 trouve les quatre, dont `ap-lil-01` en `borne_wifi` ; B2 trouve trois câbles.
-- [ ] **Panne en cascade** : `rt-lil` en panne rend `sw-lil` et `ap-lil-01` injoignables (voir ci-dessous).
+- [x] **Réseau à quatre équipements** : B1 trouve les quatre, dont `ap-lil-01` en `borne-wifi` ; B2 trouve trois câbles, le port de la borne lu `eth1`.
+- [x] **Panne en cascade** : `rt-lil` en panne rend `sw-lil` et `ap-lil-01` injoignables ; `sw-lil` en panne, seulement `ap-lil-01`.
 
 ### Tester la panne en cascade
 
