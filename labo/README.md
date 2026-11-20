@@ -61,7 +61,7 @@ rt-dc ──e1-1────e1-1── rt-lil ──e1-2────e1-1── s
 ```
 
 - `rt-dc`, `rt-lil` et `sw-lil` sont des **Nokia SR Linux**, de vrais systèmes de routeur : ils parlent SNMP et LLDP comme en entreprise. Le switch est lui aussi un SR Linux : B1 le classe donc en `routeur`, un cas à garder pour B17.
-- `ap-lil-01` est un petit **Alpine Linux** qui joue une borne : `lldpd` l'annonce en LLDP, `snmpd` répond en SNMP. Leur configuration est dans `containerlab/ap-lil-01/`. Sa description contient « access point », pour que B1 la classe en `borne_wifi`.
+- `ap-lil-01` est un petit **Alpine Linux** qui joue une borne : `lldpd` l'annonce en LLDP, `snmpd` répond en SNMP. La configuration SNMP est dans `containerlab/ap-lil-01/snmpd.conf`. Comme beaucoup de vraies bornes, elle annonce son port en LLDP par son adresse MAC. Sa description contient « access point », pour que B1 la classe en `borne_wifi`.
 
 ### Préparer le poste (une seule fois)
 
@@ -173,5 +173,6 @@ quit
 - LLDP garde un voisin disparu en mémoire environ deux minutes.
 - Une mesure peut mentir : `latence_ms` comptait le démarrage de pysnmp (500 ms) au lieu du réseau (quelques ms), et créait une fausse alerte sur chaque routeur.
 - Les adresses IP changent : un nom d'équipement associé à la mauvaise IP fait croire à un routeur qu'il est son propre voisin. Seul B1, qui lit le vrai nom à chaque adresse, fait foi.
-- Un identifiant de port LLDP n'est pas toujours un nom : la borne (lldpd) annonce son adresse MAC, dont les octets ressemblaient à du texte (`zØu`). La sonde se fie maintenant au sous-type (`lldpRemPortIdSubtype` : 3 = adresse MAC) et prend alors la description du port.
+- Un identifiant de port LLDP n'est pas toujours un nom : la borne (lldpd) annonce son adresse MAC, dont les octets ressemblaient à du texte (`zØu`). Pire, SR Linux déclare le sous-type « nom de port » (5) même pour cette adresse MAC : un équipement de marque peut se tromper. La sonde vérifie donc elle-même qu'un nom de port est en ASCII, et sinon prend la description (`eth1`).
+- snmpd lisait sa configuration deux fois (fichier à l'emplacement par défaut **et** option `-c`), ouvrait deux fois le port 161 et s'arrêtait (`Address in use`).
 - Les mots-clés de B1 ne connaîtront jamais tous les modèles : c'est le rôle futur de B17 Classification.
