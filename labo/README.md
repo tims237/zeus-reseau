@@ -78,7 +78,19 @@ Le premier lancement télécharge l'image SR Linux (environ 2 Go). Ensuite :
 | rt-dc | 172.20.20.3 | `docker exec -it clab-zeus-rt-dc sr_cli` |
 | rt-lil | 172.20.20.2 | `docker exec -it clab-zeus-rt-lil sr_cli` |
 
-Les adresses peuvent changer d'un lancement à l'autre : le tableau affiché par `deploy` fait foi. SNMP v2c est actif d'origine, avec la communauté `public`.
+Les adresses peuvent changer d'un lancement à l'autre (avec `--reconfigure`, `rt-dc` et `rt-lil` ont échangé leurs adresses) : le tableau affiché par `deploy` fait foi. Dans le code, ne les écris pas à la main : laisse B1 construire le carnet d'adresses.
+
+```bash
+python -c "
+from briques.b01_decouverte import decouvrir
+from briques.b02_topologie import construire_liens
+from sondes.sonde_snmp import SondeSNMP
+sonde = SondeSNMP('public', delai_s=0.5)
+sonde.adresses = {e.id: str(e.ip) for e in decouvrir('172.20.20.0/28', sonde)}
+for lien in construire_liens(list(sonde.adresses), sonde):
+    print(lien)
+"
+``` SNMP v2c est actif d'origine, avec la communauté `public`.
 
 Éteindre : `containerlab destroy -t zeus.clab.yml`. Repartir d'une configuration propre : `containerlab deploy -t zeus.clab.yml --reconfigure`.
 
@@ -90,7 +102,7 @@ Les adresses peuvent changer d'un lancement à l'autre : le tableau affiché par
 - [x] **LLDP** : `show system lldp neighbor` montre `rt-lil` derrière le port `ethernet-1/1` de `rt-dc`.
 - [x] **Coupure** : quand Lille coupe son port, celui de `rt-dc` passe down, et la sonde le voit (`etat_interfaces`).
 - [ ] **B3** : faire passer une coupure par `relever()` puis `comparer()`.
-- [ ] **B2** : `construire_liens(["rt-dc", "rt-lil"], sonde)` doit trouver un seul câble, `ethernet-1/1` ↔ `ethernet-1/1`.
+- [x] **B2** : `construire_liens` trouve un seul câble, `rt-dc ethernet-1/1` ↔ `rt-lil ethernet-1/1` ; le voisin vu par `mgmt0` est ignoré.
 - [ ] Un réseau plus grand (datacenter, routeur, switch, borne) pour tester la corrélation des pannes.
 
 ### Commandes utiles dans la console SR Linux
@@ -110,4 +122,5 @@ quit
 - Un port coupé par l'admin affiche la raison `port-admin-disabled` : ce n'est pas une panne, et ZeusRéseau devra le distinguer d'une vraie coupure.
 - Un routeur a beaucoup de ports **normalement** down (57 sur 58 ici) : seule une détection des **changements**, comme `comparer()`, évite les fausses alertes.
 - LLDP garde un voisin disparu en mémoire environ deux minutes.
+- Les adresses IP changent : un nom d'équipement associé à la mauvaise IP fait croire à un routeur qu'il est son propre voisin. Seul B1, qui lit le vrai nom à chaque adresse, fait foi.
 - Les mots-clés de B1 ne connaîtront jamais tous les modèles : c'est le rôle futur de B17 Classification.
