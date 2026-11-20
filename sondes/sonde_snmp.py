@@ -250,13 +250,14 @@ def assembler_voisins_lldp(
 
 
 def _texte_lisible(*candidats: str | None) -> str:
-    """Renvoie le premier candidat non vide et lisible.
+    """Renvoie le premier candidat non vide qui ressemble à un nom de port.
 
-    Filet de sécurité : un texte avec des caractères invisibles n'est pas un nom de port.
-    Il ne suffit pas toujours (des octets peuvent ressembler à des lettres, comme « zØu ») :
-    c'est pourquoi on se fie d'abord au sous-type, dans assembler_voisins_lldp.
+    Un nom de port est en ASCII et sans caractère invisible (ethernet-1/1, Gi1/0/12, eth0).
+    Les octets bruts d'une adresse MAC n'y ressemblent presque jamais (« zØu ») : on passe
+    alors à la description. Cette vérification ne dépend pas du sous-type, car certains
+    équipements (SR Linux) déclarent « nom de port » même pour une adresse MAC.
     """
     for candidat in candidats:
-        if candidat and candidat.isprintable():
+        if candidat and candidat.isascii() and candidat.isprintable():
             return candidat
     return candidats[-1] or ""

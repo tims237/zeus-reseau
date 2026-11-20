@@ -76,3 +76,18 @@ def test_port_voisin_annonce_par_nom_garde_son_nom() -> None:
         sous_types_voisins={"0.1.1": "5"},
     )
     assert voisins[0]["port_voisin"] == "ethernet-1/1"
+
+
+def test_port_voisin_en_octets_malgre_un_sous_type_nom() -> None:
+    # Bug trouvé sur le labo : SR Linux déclare le sous-type 5 (nom de port) pour tous ses
+    # voisins, même quand la borne annonce son adresse MAC. On ne peut pas se fier au
+    # sous-type seul : un nom de port est en ASCII, des octets de MAC presque jamais.
+    voisins = assembler_voisins_lldp(
+        PORTS_LOCAUX,
+        {},
+        {"224400.32770.1": "ap-lil-01"},
+        {"224400.32770.1": "zØu"},
+        {"224400.32770.1": "eth1"},
+        sous_types_voisins={"224400.32770.1": "5"},
+    )
+    assert voisins[0]["port_voisin"] == "eth1"

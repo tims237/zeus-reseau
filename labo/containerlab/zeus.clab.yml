@@ -5,6 +5,7 @@
 # rt-dc, rt-lil et sw-lil sont des Nokia SR Linux : SNMP et LLDP marchent d'origine.
 # ap-lil-01 est un petit Linux (Alpine) qui joue une borne Wi-Fi : lldpd pour s'annoncer
 # en LLDP, snmpd pour répondre en SNMP. Il télécharge ces deux programmes au lancement.
+# Comme beaucoup de vraies bornes, elle annonce son port en LLDP par son adresse MAC.
 #
 # Lancer :   containerlab deploy -t zeus.clab.yml
 # Éteindre : containerlab destroy -t zeus.clab.yml
@@ -27,10 +28,11 @@ topology:
       cmd: sleep infinity  # garde le conteneur allumé
       binds:
         - ap-lil-01/snmpd.conf:/etc/snmp/snmpd.conf:ro
-        - ap-lil-01/lldpd.conf:/etc/lldpd.d/zeus.conf:ro
       exec:
         - apk add --no-cache lldpd net-snmp
-        - snmpd -Lf /tmp/snmpd.log -c /etc/snmp/snmpd.conf
+        # snmpd lit tout seul /etc/snmp/snmpd.conf : sans « -c », sinon il le lit deux fois
+        # et échoue à ouvrir deux fois le port 161 (« Address in use »).
+        - snmpd -Lf /tmp/snmpd.log
         - lldpd -I eth1
 
   links:
