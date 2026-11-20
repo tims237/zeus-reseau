@@ -24,8 +24,8 @@ Les briques
 Le labo
 - [x] Niveau 1 : fausses sondes, dans les tests
 - [x] Niveau 2 : snmpsim, la vraie sonde SNMP face à un faux switch
-- [x] Niveau 3 : Containerlab, deux routeurs Nokia SR Linux sous WSL2
-- [ ] Un réseau plus grand pour tester la corrélation des pannes
+- [x] Niveau 3 : Containerlab sous WSL2, validé avec deux routeurs Nokia SR Linux
+- [ ] Le labo à quatre équipements (datacenter → routeur → switch → borne) et la panne en cascade
 
 Les phases suivantes : l'API et la carte 2D/3D sur les vraies données (phase 2), les alertes et la vérification avant clôture (phase 3), puis l'IA, dont B17 Classification des équipements inconnus (phase 4).
 
