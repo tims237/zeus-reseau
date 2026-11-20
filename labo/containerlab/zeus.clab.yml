@@ -1,5 +1,11 @@
 # Le réseau virtuel du labo ZeusRéseau (niveau 3), décrit pour Containerlab.
-# Deux routeurs Nokia SR Linux, reliés par un câble : le datacenter (rt-dc) et Lille (rt-lil).
+#
+#   rt-dc (datacenter) ── rt-lil (routeur de Lille) ── sw-lil (switch de Lille) ── ap-lil-01 (borne)
+#
+# rt-dc, rt-lil et sw-lil sont des Nokia SR Linux : SNMP et LLDP marchent d'origine.
+# ap-lil-01 est un petit Linux (Alpine) qui joue une borne Wi-Fi : lldpd pour s'annoncer
+# en LLDP, snmpd pour répondre en SNMP. Il télécharge ces deux programmes au lancement.
+#
 # Lancer :   containerlab deploy -t zeus.clab.yml
 # Éteindre : containerlab destroy -t zeus.clab.yml
 name: zeus
@@ -12,6 +18,22 @@ topology:
     rt-lil:
       kind: nokia_srlinux
       image: ghcr.io/nokia/srlinux:latest
+    sw-lil:
+      kind: nokia_srlinux
+      image: ghcr.io/nokia/srlinux:latest
+    ap-lil-01:
+      kind: linux
+      image: alpine:3.20
+      cmd: sleep infinity  # garde le conteneur allumé
+      binds:
+        - ap-lil-01/snmpd.conf:/etc/snmp/snmpd.conf:ro
+        - ap-lil-01/lldpd.conf:/etc/lldpd.d/zeus.conf:ro
+      exec:
+        - apk add --no-cache lldpd net-snmp
+        - snmpd -Lf /tmp/snmpd.log -c /etc/snmp/snmpd.conf
+        - lldpd -I eth1
 
   links:
     - endpoints: ["rt-dc:e1-1", "rt-lil:e1-1"]
+    - endpoints: ["rt-lil:e1-2", "sw-lil:e1-1"]
+    - endpoints: ["sw-lil:e1-2", "ap-lil-01:eth1"]

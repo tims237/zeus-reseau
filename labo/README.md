@@ -8,7 +8,7 @@ Un réseau d'entraînement simulé, pour tester le vrai code sans vrai réseau d
 | --- | --- | --- | --- |
 | 1 | Fausses sondes (dans `tests/`) | La logique des briques | À chaque commit et dans la CI (`pytest`) |
 | 2 | **snmpsim** (ce dossier) | La vraie sonde SNMP face à un faux switch | Dans la CI, et à la demande (`pytest -m labo`) |
-| 3 | **Containerlab** (`containerlab/`) | ZeusRéseau face à de vrais routeurs virtuels | À la main, sous Ubuntu (WSL2), pour essayer et faire des démos |
+| 3 | **Containerlab** (`containerlab/`) | ZeusRéseau face à un vrai réseau virtuel (3 SR Linux et une borne) | À la main, sous Ubuntu (WSL2), pour essayer et faire des démos |
 
 ## Niveau 2 : snmpsim, le faux switch
 
@@ -53,7 +53,15 @@ Dans `sw-lil-02.snmprec`, passe la dernière ligne de `|2|2` à `|2|1` : le port
 
 ## Niveau 3 : Containerlab, de vrais routeurs virtuels
 
-`containerlab/zeus.clab.yml` décrit un petit réseau : deux routeurs **Nokia SR Linux**, `rt-dc` (le datacenter) et `rt-lil` (Lille), reliés par un câble entre leurs ports `ethernet-1/1`. Ce sont de vrais systèmes de routeur : ils parlent SNMP et LLDP comme en entreprise.
+`containerlab/zeus.clab.yml` décrit une petite entreprise, du datacenter jusqu'à une borne Wi-Fi de l'agence de Lille :
+
+```
+rt-dc ──e1-1────e1-1── rt-lil ──e1-2────e1-1── sw-lil ──e1-2────eth1── ap-lil-01
+(datacenter)        (routeur de Lille)       (switch de Lille)       (borne Wi-Fi)
+```
+
+- `rt-dc`, `rt-lil` et `sw-lil` sont des **Nokia SR Linux**, de vrais systèmes de routeur : ils parlent SNMP et LLDP comme en entreprise. Le switch est lui aussi un SR Linux : B1 le classe donc en `routeur`, un cas à garder pour B17.
+- `ap-lil-01` est un petit **Alpine Linux** qui joue une borne : `lldpd` l'annonce en LLDP, `snmpd` répond en SNMP. Leur configuration est dans `containerlab/ap-lil-01/`. Sa description contient « access point », pour que B1 la classe en `borne_wifi`.
 
 ### Préparer le poste (une seule fois)
 
@@ -71,12 +79,14 @@ Dans Ubuntu :
 cd ~/zeus-reseau/labo/containerlab
 containerlab deploy -t zeus.clab.yml
 ```
-Le premier lancement télécharge l'image SR Linux (environ 2 Go). Ensuite :
+Le premier lancement télécharge l'image SR Linux (environ 2 Go) et, pour la borne, lldpd et snmpd : Ubuntu doit avoir accès à Internet. Comptez environ 2 Go de mémoire par SR Linux. Ensuite :
 
-| Routeur | Adresse | Entrer dans sa console |
-| --- | --- | --- |
-| rt-dc | 172.20.20.3 | `docker exec -it clab-zeus-rt-dc sr_cli` |
-| rt-lil | 172.20.20.2 | `docker exec -it clab-zeus-rt-lil sr_cli` |
+| Équipement | Entrer dans sa console |
+| --- | --- |
+| rt-dc | `docker exec -it clab-zeus-rt-dc sr_cli` |
+| rt-lil | `docker exec -it clab-zeus-rt-lil sr_cli` |
+| sw-lil | `docker exec -it clab-zeus-sw-lil sr_cli` |
+| ap-lil-01 | `docker exec -it clab-zeus-ap-lil-01 sh` (un Linux : `lldpcli show neighbors`) |
 
 Les adresses peuvent changer d'un lancement à l'autre (avec `--reconfigure`, `rt-dc` et `rt-lil` ont échangé leurs adresses) : le tableau affiché par `deploy` fait foi. Dans le code, ne les écris pas à la main : laisse B1 construire le carnet d'adresses.
 
@@ -90,7 +100,9 @@ sonde.adresses = {e.id: str(e.ip) for e in decouvrir('172.20.20.0/28', sonde)}
 for lien in construire_liens(list(sonde.adresses), sonde):
     print(lien)
 "
-``` SNMP v2c est actif d'origine, avec la communauté `public`.
+```
+
+SNMP v2c est actif d'origine sur les SR Linux, avec la communauté `public` ; la borne utilise la même.
 
 Éteindre : `containerlab destroy -t zeus.clab.yml`. Repartir d'une configuration propre : `containerlab deploy -t zeus.clab.yml --reconfigure`.
 
@@ -103,7 +115,44 @@ for lien in construire_liens(list(sonde.adresses), sonde):
 - [x] **Coupure** : quand Lille coupe son port, celui de `rt-dc` passe down, et la sonde le voit (`etat_interfaces`).
 - [x] **B3** : une coupure côté Lille, passée par `relever()` puis `comparer()`, donne exactement deux `port_down` (`rt-lil` et `rt-dc`, sur `ethernet-1/1`) et aucune alerte de seuil.
 - [x] **B2** : `construire_liens` trouve un seul câble, `rt-dc ethernet-1/1` ↔ `rt-lil ethernet-1/1` ; le voisin vu par `mgmt0` est ignoré.
-- [ ] Un réseau plus grand (datacenter, routeur, switch, borne) pour tester la corrélation des pannes.
+- [ ] **Réseau à quatre équipements** : B1 trouve les quatre, dont `ap-lil-01` en `borne_wifi` ; B2 trouve trois câbles.
+- [ ] **Panne en cascade** : `rt-lil` en panne rend `sw-lil` et `ap-lil-01` injoignables (voir ci-dessous).
+
+### Tester la panne en cascade
+
+Quand le routeur de Lille tombe, tout ce qui est derrière lui est coupé du datacenter. ZeusRéseau doit envoyer **une** alerte, « Agence Lille hors ligne, cause : rt-lil », et non une alerte par équipement. C'est le rôle de `equipements_injoignables` (B2).
+
+```bash
+python -c "
+from briques.b01_decouverte import decouvrir
+from briques.b02_topologie import construire_liens, equipements_injoignables
+from sondes.sonde_snmp import SondeSNMP
+sonde = SondeSNMP('public', delai_s=0.5)
+equipements = decouvrir('172.20.20.0/28', sonde)
+sonde.adresses = {e.id: str(e.ip) for e in equipements}
+for e in equipements:
+    print(e.id, e.ip, e.type)
+liens = construire_liens(list(sonde.adresses), sonde)
+for lien in liens:
+    print(lien)
+print('Si rt-lil tombe :', equipements_injoignables('rt-dc', liens, en_panne={'rt-lil'}))
+print('Si sw-lil tombe :', equipements_injoignables('rt-dc', liens, en_panne={'sw-lil'}))
+"
+```
+
+On doit voir quatre équipements, trois câbles, puis `{'ap-lil-01', 'sw-lil'}` pour la panne de `rt-lil`, et `{'ap-lil-01'}` pour celle de `sw-lil`.
+
+**Une limite du labo, à connaître** : dans Containerlab, chaque équipement a aussi un port d'administration (`mgmt0`), relié directement au PC. Si on coupe vraiment `rt-lil`, la sonde joint toujours `sw-lil` et la borne par ce chemin de secours : ils ne paraissent pas injoignables. C'est pourquoi on donne ici la panne à `equipements_injoignables` (`en_panne={'rt-lil'}`), sur la **vraie** topologie lue par B2. En entreprise, la supervision passe souvent par le réseau lui-même : derrière un routeur mort, tout devient vraiment muet, et c'est exactement ce cas que calcule la fonction.
+
+### Si un câble ne monte pas
+
+Si `show interface ethernet-1/2` affiche `down` sur `rt-lil` ou `sw-lil` alors que rien n'a été coupé, active le port :
+```
+enter candidate
+set / interface ethernet-1/2 admin-state enable
+commit now
+```
+Pour la borne, vérifie que lldpd et snmpd tournent : `docker exec clab-zeus-ap-lil-01 ps`. Sinon, relance le labo avec `--reconfigure`.
 
 ### Commandes utiles dans la console SR Linux
 
