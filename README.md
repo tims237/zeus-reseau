@@ -17,7 +17,8 @@ Les briques
 - [x] **B1 Découverte** des équipements, validée sur de vrais routeurs (SR Linux reconnu comme routeur)
 - [x] **B13 Inventaire** des emplacements (lecture de sysLocation), validé sur de vrais routeurs
 - [x] **B2 Topologie** (qui est branché à qui) : logique testée avec une fausse sonde
-- [ ] B2 sur le labo : la sonde SNMP doit apprendre à lire les voisins LLDP
+- [x] B2 : la sonde SNMP lit les voisins LLDP (LLDP-MIB), testée contre snmpsim
+- [ ] B2 sur le labo Containerlab : construire les liens entre les vrais routeurs
 - [x] **B3 Supervision** (état des ports, changements, seuils) : logique testée, état réel des ports lu par la sonde
 - [ ] B3 sur le labo : une vraie coupure passée par `relever()` et `comparer()`
 - [ ] B3 : lire le CPU, mesurer la latence par un vrai ping, distinguer un port coupé par l'admin d'une panne

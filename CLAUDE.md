@@ -25,11 +25,11 @@ Levis développe ce projet pour apprendre Python, les tests, la CI/CD et surtout
 ## État actuel
 
 Phase 1 : socle et collecte des données, presque terminée.
-- Fait : les modèles de `zeus_core/modeles.py` (Emplacement, TypeEquipement, Interface, Equipement, Lien, Incident, Releve, Evenement) ; pre-commit ; CI GitHub Actions ; B1 Découverte (`briques/b01_decouverte/`) ; B13 Inventaire (`briques/b13_inventaire/`) ; B2 Topologie (`briques/b02_topologie/`) ; B3 Supervision (`briques/b03_supervision/`) ; vraie sonde SNMP (`sondes/sonde_snmp.py`) testée contre snmpsim ; labo Containerlab (`labo/containerlab/`, deux routeurs Nokia SR Linux).
+- Fait : les modèles de `zeus_core/modeles.py` (Emplacement, TypeEquipement, Interface, Equipement, Lien, Incident, Releve, Evenement) ; pre-commit ; CI GitHub Actions ; B1 Découverte (`briques/b01_decouverte/`) ; B13 Inventaire (`briques/b13_inventaire/`) ; B2 Topologie (`briques/b02_topologie/`) ; B3 Supervision (`briques/b03_supervision/`) ; vraie sonde SNMP (`sondes/sonde_snmp.py`, y compris la lecture des voisins LLDP) testée contre snmpsim ; labo Containerlab (`labo/containerlab/`, deux routeurs Nokia SR Linux).
 - Validé sur Containerlab : B1 (les deux routeurs trouvés, de type `routeur`), B13 (sysLocation lu et décodé), lecture de l'état réel des ports pendant une coupure.
 - Reste à faire dans cette phase :
   1. B3 sur le labo : une vraie coupure passée par `relever()` puis `comparer()` ;
-  2. B2 sur le labo : ajouter à la sonde la lecture des voisins LLDP en SNMP (LLDP-MIB), puis valider `construire_liens` ;
+  2. B2 sur le labo Containerlab : valider `construire_liens` avec les vrais routeurs (la sonde lit déjà LLDP en SNMP avec `voisins_lldp`, testée contre snmpsim ; les voisins vus par les ports `mgmt` sont ignorés) ;
   3. un réseau plus grand (datacenter → routeur → switch → borne) pour tester `equipements_injoignables` ;
   4. plus tard dans la sonde : CPU en SNMP, vrai ping ICMP, SNMP v3, et distinguer un port coupé par l'admin (`port-admin-disabled`) d'une vraie panne.
 - Idée retenue pour plus tard : **B17 Classification** des équipements inconnus (numéro de fabricant du sysObjectID, capacités LLDP, nombre de ports → type + confiance + validation par l'ingénieur ; machine learning en phase 4). Ne pas la commencer avant la fin de la phase 1.

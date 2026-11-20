@@ -15,7 +15,10 @@ Un réseau d'entraînement simulé, pour tester le vrai code sans vrai réseau d
 `snmpsim/sw-lil-02.snmprec` décrit les réponses SNMP d'un switch Cisco imaginaire, SW-LIL-02 :
 
 - son nom, son modèle et son emplacement (`LIL/BatA/E2/SalleServeur/B2/U14`) ;
-- trois ports : Gi1/0/1 et Gi1/0/11 up, **Gi1/0/12 down**.
+- trois ports : Gi1/0/1 et Gi1/0/11 up, **Gi1/0/12 down** ;
+- ses voisins LLDP : `rt-lil` derrière Gi1/0/1, `AP-LIL-01` derrière Gi1/0/11, et `rt-dc` derrière le port d'administration mgmt0 (que la sonde doit ignorer).
+
+Les lignes sont rangées dans l'ordre des OID (snmpsim l'exige) : c'est pour ça que les lignes LLDP, en `1.0.8802…`, sont en haut.
 
 Chaque ligne suit le format `OID|type|valeur` :
 - l'**OID** est l'adresse de l'information dans l'équipement, par exemple `1.3.6.1.2.1.1.5.0` pour son nom ;
@@ -28,7 +31,7 @@ Chaque ligne suit le format `OID|type|valeur` :
 pytest -m labo
 ```
 
-Le test démarre snmpsim tout seul, interroge le faux switch avec la vraie sonde (`sondes/sonde_snmp.py`), vérifie que B1, B13 et B3 lisent bien ses réponses, puis arrête snmpsim.
+Le test démarre snmpsim tout seul, interroge le faux switch avec la vraie sonde (`sondes/sonde_snmp.py`), vérifie que B1, B13, B2 et B3 lisent bien ses réponses, puis arrête snmpsim.
 
 ### Interroger le faux switch à la main
 
@@ -87,7 +90,7 @@ Les adresses peuvent changer d'un lancement à l'autre : le tableau affiché par
 - [x] **LLDP** : `show system lldp neighbor` montre `rt-lil` derrière le port `ethernet-1/1` de `rt-dc`.
 - [x] **Coupure** : quand Lille coupe son port, celui de `rt-dc` passe down, et la sonde le voit (`etat_interfaces`).
 - [ ] **B3** : faire passer une coupure par `relever()` puis `comparer()`.
-- [ ] **B2** : la sonde ne lit pas encore les voisins LLDP en SNMP.
+- [ ] **B2** : `construire_liens(["rt-dc", "rt-lil"], sonde)` doit trouver un seul câble, `ethernet-1/1` ↔ `ethernet-1/1`.
 - [ ] Un réseau plus grand (datacenter, routeur, switch, borne) pour tester la corrélation des pannes.
 
 ### Commandes utiles dans la console SR Linux
