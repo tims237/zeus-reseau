@@ -149,3 +149,13 @@ def test_equipement_muet_n_a_aucun_voisin(sonde: SondeSNMP) -> None:
     # Une mauvaise communauté : l'équipement ne répond pas, la sonde renvoie une liste vide.
     muette = SondeSNMP(communaute="inconnue", port=sonde.port, delai_s=0.5)
     assert muette.voisins_lldp("127.0.0.1") == []
+
+
+@pytest.mark.labo
+def test_latence_mesure_le_reseau_et_pas_le_demarrage_de_pysnmp(sonde: SondeSNMP) -> None:
+    # snmpsim tourne sur ce même ordinateur : il répond en quelques millisecondes.
+    # Une latence de plusieurs centaines de millisecondes voudrait dire que le chronomètre
+    # compte aussi le démarrage de pysnmp (bug trouvé sur le labo Containerlab).
+    latence = sonde.latence_ms("SW-LIL-02")
+    assert latence is not None
+    assert latence < 100
