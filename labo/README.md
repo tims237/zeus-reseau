@@ -101,7 +101,7 @@ for lien in construire_liens(list(sonde.adresses), sonde):
 - [x] **B13 Inventaire** : un `sysLocation` écrit sur le routeur est lu par la sonde et décodé par `lire_syslocation`.
 - [x] **LLDP** : `show system lldp neighbor` montre `rt-lil` derrière le port `ethernet-1/1` de `rt-dc`.
 - [x] **Coupure** : quand Lille coupe son port, celui de `rt-dc` passe down, et la sonde le voit (`etat_interfaces`).
-- [ ] **B3** : faire passer une coupure par `relever()` puis `comparer()`.
+- [x] **B3** : une coupure côté Lille, passée par `relever()` puis `comparer()`, donne exactement deux `port_down` (`rt-lil` et `rt-dc`, sur `ethernet-1/1`) et aucune alerte de seuil.
 - [x] **B2** : `construire_liens` trouve un seul câble, `rt-dc ethernet-1/1` ↔ `rt-lil ethernet-1/1` ; le voisin vu par `mgmt0` est ignoré.
 - [ ] Un réseau plus grand (datacenter, routeur, switch, borne) pour tester la corrélation des pannes.
 
@@ -122,5 +122,6 @@ quit
 - Un port coupé par l'admin affiche la raison `port-admin-disabled` : ce n'est pas une panne, et ZeusRéseau devra le distinguer d'une vraie coupure.
 - Un routeur a beaucoup de ports **normalement** down (57 sur 58 ici) : seule une détection des **changements**, comme `comparer()`, évite les fausses alertes.
 - LLDP garde un voisin disparu en mémoire environ deux minutes.
+- Une mesure peut mentir : `latence_ms` comptait le démarrage de pysnmp (500 ms) au lieu du réseau (quelques ms), et créait une fausse alerte sur chaque routeur.
 - Les adresses IP changent : un nom d'équipement associé à la mauvaise IP fait croire à un routeur qu'il est son propre voisin. Seul B1, qui lit le vrai nom à chaque adresse, fait foi.
 - Les mots-clés de B1 ne connaîtront jamais tous les modèles : c'est le rôle futur de B17 Classification.

@@ -18,8 +18,7 @@ Les briques
 - [x] **B13 Inventaire** des emplacements (lecture de sysLocation), validé sur de vrais routeurs
 - [x] **B2 Topologie** (qui est branché à qui) : logique testée avec une fausse sonde
 - [x] B2 : la sonde SNMP lit les voisins LLDP (LLDP-MIB), testée contre snmpsim et validée sur de vrais routeurs (un seul câble trouvé, `rt-dc` ↔ `rt-lil`)
-- [x] **B3 Supervision** (état des ports, changements, seuils) : logique testée, état réel des ports lu par la sonde
-- [ ] B3 sur le labo : une vraie coupure passée par `relever()` et `comparer()`
+- [x] **B3 Supervision** (état des ports, changements, seuils) : validée sur de vrais routeurs, une coupure donne exactement deux `port_down`, un par bout du câble, sans fausse alerte
 - [ ] B3 : lire le CPU, mesurer la latence par un vrai ping, distinguer un port coupé par l'admin d'une panne
 
 Le labo
