@@ -36,9 +36,14 @@ IF_OPER_STATUS = "1.3.6.1.2.1.2.2.1.8"  # l'état de chaque port : 1 = up, 2 = d
 LLDP_LOC_PORT_ID = "1.0.8802.1.1.2.1.3.7.1.3"  # le nom du port, par exemple ethernet-1/1
 LLDP_LOC_PORT_DESC = "1.0.8802.1.1.2.1.3.7.1.4"  # sa description, en secours
 # Ses voisins (lldpRemTable). Chaque ligne a pour index « horodatage.port local.numéro » :
+LLDP_REM_PORT_ID_SUBTYPE = "1.0.8802.1.1.2.1.4.1.1.6"  # ce que contient l'identifiant
 LLDP_REM_PORT_ID = "1.0.8802.1.1.2.1.4.1.1.7"  # le port du voisin
 LLDP_REM_PORT_DESC = "1.0.8802.1.1.2.1.4.1.1.8"  # sa description, en secours
 LLDP_REM_SYS_NAME = "1.0.8802.1.1.2.1.4.1.1.9"  # le nom du voisin, par exemple rt-lil
+
+# Sous-types de l'identifiant de port (lldpRemPortIdSubtype) qui ne sont PAS un nom :
+# 3 = une adresse MAC, 4 = une adresse réseau, en octets bruts.
+SOUS_TYPES_ADRESSE = ("3", "4")
 
 # Les ports d'administration (mgmt0…) sont reliés à un réseau à part, pas au réseau
 # supervisé : on ignore les voisins vus par eux, sinon B2 inventerait de faux câbles.
@@ -115,6 +120,7 @@ class SondeSNMP:
             noms_voisins=noms,
             ports_voisins=self._walk(ip, LLDP_REM_PORT_ID) or {},
             descriptions_voisins=self._walk(ip, LLDP_REM_PORT_DESC) or {},
+            sous_types_voisins=self._walk(ip, LLDP_REM_PORT_ID_SUBTYPE) or {},
         )
 
     # --- La mécanique SNMP --------------------------------------------------------
@@ -211,13 +217,17 @@ def assembler_voisins_lldp(
     noms_voisins: dict[str, str],
     ports_voisins: dict[str, str],
     descriptions_voisins: dict[str, str],
+    sous_types_voisins: dict[str, str] | None = None,
 ) -> list[dict[str, str]]:
     """Relie les tables LLDP lues en SNMP, et renvoie un voisin par ligne.
 
     Les tables des voisins ont pour index « horodatage.port local.numéro » ; le
     « port local » est un numéro qui renvoie à la table des ports de l'équipement.
+    Le sous-type de chaque identifiant de port dit ce qu'il contient : un nom (ethernet-1/1)
+    ou une adresse MAC. Une adresse n'est pas un nom de port : on prend alors la description.
     Cette fonction ne touche pas le réseau : on peut la tester avec de simples dictionnaires.
     """
+    sous_types = sous_types_voisins or {}
     voisins: list[dict[str, str]] = []
     for index, nom in sorted(noms_voisins.items()):
         morceaux = index.split(".")
@@ -231,9 +241,10 @@ def assembler_voisins_lldp(
         )
         if port_local.startswith(PORTS_ADMINISTRATION):
             continue
-        port_voisin = _texte_lisible(
-            ports_voisins.get(index), descriptions_voisins.get(index), "inconnu"
-        )
+        identifiant = ports_voisins.get(index)
+        if sous_types.get(index) in SOUS_TYPES_ADRESSE:
+            identifiant = None  # une adresse MAC ou réseau : pas un nom de port
+        port_voisin = _texte_lisible(identifiant, descriptions_voisins.get(index), "inconnu")
         voisins.append({"port_local": port_local, "voisin": nom, "port_voisin": port_voisin})
     return voisins
 
@@ -241,8 +252,9 @@ def assembler_voisins_lldp(
 def _texte_lisible(*candidats: str | None) -> str:
     """Renvoie le premier candidat non vide et lisible.
 
-    Un identifiant de port LLDP n'est pas toujours un nom : ce peut être une adresse MAC,
-    en octets bruts. Dans ce cas, on passe à la description, puis au dernier recours.
+    Filet de sécurité : un texte avec des caractères invisibles n'est pas un nom de port.
+    Il ne suffit pas toujours (des octets peuvent ressembler à des lettres, comme « zØu ») :
+    c'est pourquoi on se fie d'abord au sous-type, dans assembler_voisins_lldp.
     """
     for candidat in candidats:
         if candidat and candidat.isprintable():
