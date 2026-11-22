@@ -9,7 +9,7 @@ ZeusRéseau écoute le réseau d'une entreprise depuis un serveur Linux, dessine
 **Phase 1 : socle et collecte des données**, terminée : toutes les briques sont validées sur un vrai réseau virtuel.
 
 Le socle
-- [x] Modèles partagés (`zeus_core`) : Emplacement, Equipement, Interface, Lien, Incident, Releve, Evenement
+- [x] Modèles partagés (`zeus_core`) : Emplacement, Equipement, Interface, Lien, Incident, Releve, Evenement, EtatReseau
 - [x] Contrôles avant commit (pre-commit : ruff, mypy, pytest)
 - [x] Intégration continue (GitHub Actions), avec les tests du labo snmpsim
 
@@ -27,16 +27,24 @@ Le labo
 - [x] Niveau 3 : Containerlab sous WSL2, validé avec deux routeurs Nokia SR Linux
 - [x] Le labo à quatre équipements (datacenter → routeur → switch → borne) et la panne en cascade
 
-Les phases suivantes : l'API et la carte 2D/3D sur les vraies données (phase 2), les alertes et la vérification avant clôture (phase 3), puis l'IA, dont B17 Classification des équipements inconnus (phase 4).
+**Phase 2 : l'application visible**, en cours.
+
+- [x] **Le collecteur** (`zeus_app/collecte.py`) : `collecter()` enchaîne B1, B2 et B3, et renvoie la photo du réseau (`EtatReseau`)
+- [x] **B11 API** (`zeus_app/api.py`) : `/etat`, `/equipements` et `/liens` renvoient la dernière photo, reprise toutes les minutes ; une collecte qui échoue garde l'ancienne photo
+- [ ] La corrélation : regrouper les événements d'une même panne en un seul incident, sur `/incidents`
+- [ ] **B12 Carte** 2D et 3D, branchée sur l'API
+
+Les phases suivantes : les alertes et la vérification avant clôture (phase 3), puis l'IA, dont B17 Classification des équipements inconnus (phase 4, idées dans `docs/b17-classification.md`).
 
 ## Technologies
 
 - **Python 3.12** pour tout le moteur
 - **Pydantic** pour les modèles de données partagés
 - **pysnmp** pour interroger les équipements en SNMP
+- **FastAPI** et **uvicorn** pour l'API web
 - **pytest, ruff, mypy, pre-commit** pour les tests et la qualité du code
 - **snmpsim** et **Containerlab** (avec Docker, sous WSL2) pour le labo
-- Plus tard : networkx, FastAPI, Redis, Three.js
+- Plus tard : networkx, Redis, Three.js
 
 ## Démarrer
 
@@ -57,6 +65,16 @@ Dans PyCharm : *Settings → Project → Python Interpreter → Add Interpreter 
 Sous Ubuntu (pour le labo Containerlab), c'est la même chose avec `python3 -m venv .venv` puis `source .venv/bin/activate`.
 
 Refais `pip install -e ".[dev]"` chaque fois que `pyproject.toml` gagne une dépendance ou un nouveau dossier de code.
+
+## Lancer l'API
+
+Sous Ubuntu, avec le labo Containerlab lancé :
+
+```bash
+ZEUS_COMMUNAUTE=public uvicorn zeus_app.principal:app
+```
+
+Puis ouvrir http://localhost:8000/docs dans le navigateur. La communauté SNMP est un mot de passe : elle se donne au lancement (`ZEUS_COMMUNAUTE`), jamais dans le code. `ZEUS_PLAGE` choisit la plage d'adresses à surveiller (par défaut, celle du labo).
 
 ## Vérifier le code
 
@@ -84,7 +102,7 @@ Voir [`labo/README.md`](labo/README.md) : les trois niveaux de tests, le faux sw
 ```
 zeus_core/      modèles partagés par toutes les briques (Pydantic)
 briques/        les briques du logiciel, une par sous-dossier (b01_decouverte…)
-zeus_app/       l'application, qui assemble les briques (collecteur, API)
+zeus_app/       l'application, qui assemble les briques : collecteur (collecte.py), API (api.py), point de départ (principal.py)
 sondes/         le code qui parle au réseau (sonde SNMP)
 labo/           snmpsim (faux switch) et Containerlab (routeurs virtuels)
 tests/          les tests, un fichier par module

@@ -18,20 +18,27 @@ Levis développe ce projet pour apprendre Python, les tests, la CI/CD et surtout
 ## Façon de travailler avec Git
 
 - Il fait lui-même ses commits, push et pull requests **depuis le terminal**, pas avec les boutons de PyCharm. Donne-lui les commandes, ne les lance pas à sa place.
+- Il recopie lui-même le code dans PyCharm : donne-le dans la conversation, fichier par fichier, commenté ; ne le pousse pas toi-même sauf s'il le demande.
+- Il ne veut pas que Claude apparaisse dans le projet : pas de lignes `Co-Authored-By` ni de mention « Generated with Claude Code » dans les commits et pull requests.
 - Petite correction : directement sur `main`. Brique entière ou changement de plusieurs fichiers : une branche (`feat/…`, `fix/…`, `docs/…`) puis une pull request.
 - Messages de commit clairs, qui disent ce que fait le commit (`B1 : reconnaître SR Linux comme routeur`).
 - Un test rouge se corrige dans le code, pas en supprimant le test.
 
 ## État actuel
 
+Phase 2 : l'application visible, en cours.
+- Fait : `EtatReseau` (la photo du réseau) ; `zeus_app/collecte.py` (`collecter()`) ; B11 API dans `zeus_app/api.py` (`creer_api(prendre_photo, intervalle_s)` : `/etat`, `/equipements`, `/liens`, 503 tant qu'aucune photo n'a réussi, une collecte ratée est notée dans le journal et garde l'ancienne photo) ; `zeus_app/principal.py` branche l'API sur la vraie sonde (`ZEUS_COMMUNAUTE`, `ZEUS_PLAGE`). Lancer : `ZEUS_COMMUNAUTE=public uvicorn zeus_app.principal:app`.
+- Reste : la corrélation (`/incidents`), puis B12 Carte 2D/3D branchée sur l'API.
+- Avertissement connu : Starlette signale que `httpx` est remplacé par `httpx2` pour son client de test ; à vérifier avant de changer.
+
 Phase 1 : socle et collecte des données, terminée et validée sur le labo à quatre équipements.
 - Fait : les modèles de `zeus_core/modeles.py` (Emplacement, TypeEquipement, Interface, Equipement, Lien, Incident, Releve, Evenement) ; pre-commit ; CI GitHub Actions ; B1 Découverte (`briques/b01_decouverte/`) ; B13 Inventaire (`briques/b13_inventaire/`) ; B2 Topologie (`briques/b02_topologie/`) ; B3 Supervision (`briques/b03_supervision/`) ; vraie sonde SNMP (`sondes/sonde_snmp.py`, y compris la lecture des voisins LLDP) testée contre snmpsim ; labo Containerlab (`labo/containerlab/`) : `rt-dc` → `rt-lil` → `sw-lil` (trois Nokia SR Linux) → `ap-lil-01` (borne simulée, Alpine Linux avec lldpd et snmpd).
 - Validé sur Containerlab : B1 (les deux routeurs trouvés, de type `routeur`), B13 (sysLocation lu et décodé), B2 (un seul câble `rt-dc` ↔ `rt-lil`, le voisin vu par `mgmt0` ignoré), B3 (une coupure côté Lille donne exactement deux `port_down`, sur `rt-lil` et sur `rt-dc`, et aucune fausse alerte de latence depuis la correction de `latence_ms`) ; labo à quatre : B1 trouve les quatre équipements (`ap-lil-01` en `borne-wifi`), B2 les trois câbles (port de la borne lu `eth1`), et `equipements_injoignables` donne `{sw-lil, ap-lil-01}` si `rt-lil` tombe, `{ap-lil-01}` si `sw-lil` tombe.
 - Limite connue du labo : dans Containerlab, `mgmt0` garde chaque équipement joignable ; la panne en cascade est donc donnée à `equipements_injoignables`, sur la vraie topologie lue par B2.
 - Améliorations de la sonde restant à faire : CPU en SNMP, vrai ping ICMP, SNMP v3, et distinguer un port coupé par l'admin (`port-admin-disabled`) d'une vraie panne.
-- Prochaine étape proposée, à décider avec Levis : regrouper les deux `port_down` d'un même câble (ses deux bouts, connus grâce à B2) en un seul incident, c'est la corrélation.
+- Prochaine étape proposée (phase 2) : regrouper les deux `port_down` d'un même câble (ses deux bouts, connus grâce à B2) en un seul incident, c'est la corrélation.
 - Idée retenue pour plus tard : **B17 Classification** des équipements inconnus (numéro de fabricant du sysObjectID, capacités LLDP, nombre de ports → type + confiance + validation par l'ingénieur ; machine learning en phase 4). Idées détaillées dans `docs/b17-classification.md` (catalogue en données plutôt que dans le code, hauteur en U, identification une seule fois). À faire après l'API, la corrélation et la carte.
-Ne pas commencer les briques des phases suivantes (API, carte 3D, IA) sans qu'il le demande.
+Ne pas commencer les briques des phases 3 et 4 (alertes, IA) sans qu'il le demande.
 
 ## Architecture
 
@@ -44,7 +51,7 @@ Ne pas commencer les briques des phases suivantes (API, carte 3D, IA) sans qu'il
 ```
 zeus_core/        modèles partagés (Pydantic)
 briques/          une brique par sous-dossier
-zeus_app/         l'application : collecteur (et bientôt l'API B11)
+zeus_app/         l'application : collecteur, API B11, point de départ
 sondes/           code qui parle au réseau (SondeSNMP)
 labo/snmpsim/     faux switch SNMP, utilisé par `pytest -m labo` et la CI
 labo/containerlab/ réseau virtuel (routeurs SR Linux), lancé à la main sous Ubuntu
@@ -59,9 +66,9 @@ tests/            un fichier de tests par module : test_zeus_core.py, test_b01_d
 
 ## Stack
 
-- Python 3.12, Pydantic v2, pysnmp
+- Python 3.12, Pydantic v2, pysnmp, FastAPI et uvicorn (API)
 - Tests : pytest ; qualité : ruff (lint + format), mypy en mode strict ; labo : snmpsim, Containerlab
-- Plus tard : networkx, FastAPI, redis-py, Three.js
+- Plus tard : networkx, redis-py, Three.js
 
 ## Commandes
 
