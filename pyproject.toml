@@ -19,7 +19,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["zeus_core*", "briques*", "sondes*"]
+include = ["zeus_core*", "briques*", "sondes*", "zeus_app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -37,7 +37,7 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.mypy]
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["zeus_core", "briques", "sondes"]
+files = ["zeus_core", "briques", "sondes", "zeus_app"]
 
 [[tool.mypy.overrides]]
 # pysnmp ne fournit pas ses types : mypy ne le vérifie pas.

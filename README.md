@@ -84,6 +84,7 @@ Voir [`labo/README.md`](labo/README.md) : les trois niveaux de tests, le faux sw
 ```
 zeus_core/      modèles partagés par toutes les briques (Pydantic)
 briques/        les briques du logiciel, une par sous-dossier (b01_decouverte…)
+zeus_app/       l'application, qui assemble les briques (collecteur, API)
 sondes/         le code qui parle au réseau (sonde SNMP)
 labo/           snmpsim (faux switch) et Containerlab (routeurs virtuels)
 tests/          les tests, un fichier par module
