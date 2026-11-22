@@ -115,3 +115,16 @@ class Evenement(BaseModel):
     ]
     horodatage: datetime
     valeur: float | None = None  # la mesure en cause, pour cpu_eleve et latence_elevee
+
+
+class EtatReseau(BaseModel):
+    """La « photo » du réseau à un instant donné, prise par le collecteur.
+
+    Une simple boîte : elle ne calcule rien, elle range ensemble ce que B1, B2 et B3
+    ont trouvé. L'API l'envoie telle quelle, en JSON, à la carte et aux autres écrans.
+    """
+
+    horodatage: datetime  # obligatoire : sans l'heure, impossible de savoir si c'est périmé
+    equipements: list[Equipement] = Field(default_factory=list)  # trouvés par B1
+    liens: list[Lien] = Field(default_factory=list)  # trouvés par B2
+    releves: list[Releve] = Field(default_factory=list)  # pris par B3

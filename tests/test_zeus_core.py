@@ -11,7 +11,15 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from zeus_core.modeles import Emplacement, Equipement, Incident, Lien, TypeEquipement
+from zeus_core.modeles import (
+    Emplacement,
+    Equipement,
+    EtatReseau,
+    Incident,
+    Lien,
+    Releve,
+    TypeEquipement,
+)
 
 # --- Emplacement ---------------------------------------------------------------
 
@@ -130,3 +138,71 @@ def test_incident_sans_date_refuse() -> None:
     # ouvert_le est obligatoire : un incident sans date doit être refusé.
     with pytest.raises(ValidationError):
         Incident(id="3", equipement_id="SW-X", gravite="lent")
+
+
+# --- EtatReseau : la photo du réseau ---------------------------------------------------
+
+PHOTO_DE = datetime(2026, 11, 22, 15, 12, 4)
+
+
+def test_etat_reseau_vide() -> None:
+    # Un réseau où l'on n'a encore rien trouvé : seule l'heure est obligatoire.
+    etat = EtatReseau(horodatage=PHOTO_DE)
+    assert etat.equipements == []
+    assert etat.liens == []
+    assert etat.releves == []
+
+
+def test_etat_reseau_sans_heure_refuse() -> None:
+    with pytest.raises(ValidationError):
+        EtatReseau()  # type: ignore[call-arg]
+
+
+def test_etat_reseau_complet() -> None:
+    etat = EtatReseau(
+        horodatage=PHOTO_DE,
+        equipements=[
+            Equipement(id="rt-dc", ip="172.20.20.5"),
+            Equipement(id="rt-lil", ip="172.20.20.2"),
+        ],
+        liens=[
+            Lien(
+                equipement_a="rt-dc",
+                interface_a="ethernet-1/1",
+                equipement_b="rt-lil",
+                interface_b="ethernet-1/1",
+            )
+        ],
+        releves=[Releve(equipement_id="rt-dc", horodatage=PHOTO_DE, repond=True)],
+    )
+    assert [e.id for e in etat.equipements] == ["rt-dc", "rt-lil"]
+    assert etat.liens[0].equipement_b == "rt-lil"
+    assert etat.releves[0].repond
+
+
+def test_etat_reseau_mauvais_compartiment_refuse() -> None:
+    # Un relevé rangé à la place d'un câble : Pydantic refuse la boîte mal remplie.
+    with pytest.raises(ValidationError):
+        EtatReseau(
+            horodatage=PHOTO_DE,
+            liens=[Releve(equipement_id="rt-dc", horodatage=PHOTO_DE, repond=True)],  # type: ignore[list-item]
+        )
+
+
+def test_etat_reseau_aller_retour_json() -> None:
+    # Ce que l'API enverra : la photo en JSON, puis relue à l'arrivée, identique.
+    etat = EtatReseau(
+        horodatage=PHOTO_DE,
+        equipements=[Equipement(id="rt-dc", ip="172.20.20.5")],
+        releves=[
+            Releve(
+                equipement_id="rt-dc",
+                horodatage=PHOTO_DE,
+                repond=True,
+                interfaces={"ethernet-1/1": True},
+            )
+        ],
+    )
+    texte = etat.model_dump_json()
+    assert '"rt-dc"' in texte
+    assert EtatReseau.model_validate_json(texte) == etat

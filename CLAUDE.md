@@ -37,12 +37,14 @@ Ne pas commencer les briques des phases suivantes (API, carte 3D, IA) sans qu'il
 
 - `zeus_core/` contient les modèles Pydantic partagés. Toute donnée échangée entre briques y a d'abord un modèle.
 - Chaque brique est un sous-dossier de `briques/` qui ne dépend que de `zeus_core`, jamais d'une autre brique.
+- `zeus_app/` est le chef d'orchestre : lui seul assemble les briques. `zeus_app/collecte.py` : `collecter(plage, sonde, maintenant)` enchaîne B1 → carnet d'adresses → B2 et B3, et renvoie un `EtatReseau` (la photo du réseau).
 - Le code qui touche le réseau passe par une interface (`Protocol`) et vit dans `sondes/`, pour être remplacé par une fausse version dans les tests.
 - La sonde SNMP reçoit une IP pour B1 ; pour B2 et B3, qui travaillent par nom, on lui donne le carnet d'adresses construit par B1 : `sonde.adresses = {e.id: str(e.ip) for e in decouvrir(plage, sonde)}`. Ne jamais écrire les IP du labo à la main : elles changent d'un lancement à l'autre.
 
 ```
 zeus_core/        modèles partagés (Pydantic)
 briques/          une brique par sous-dossier
+zeus_app/         l'application : collecteur (et bientôt l'API B11)
 sondes/           code qui parle au réseau (SondeSNMP)
 labo/snmpsim/     faux switch SNMP, utilisé par `pytest -m labo` et la CI
 labo/containerlab/ réseau virtuel (routeurs SR Linux), lancé à la main sous Ubuntu
