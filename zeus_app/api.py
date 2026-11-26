@@ -179,4 +179,13 @@ def creer_api(
         """Les incidents fermés, du plus récent au plus ancien."""
         return list(reversed(memoire.historique))
 
+    @app.get("/equipements/{nom}")
+    def lire_un_equipement(nom: str) -> Equipement:
+        """La fiche d'un seul équipement, par son nom."""
+        for equipement in photo().equipements:
+            if equipement.id == nom:
+                return equipement
+        # Aucun équipement de ce nom dans la photo : 404, « introuvable »
+        raise HTTPException(status_code=404, detail=f"Équipement inconnu : {nom}")
+
     return app
