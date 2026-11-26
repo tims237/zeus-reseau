@@ -208,3 +208,20 @@ def test_route_historique() -> None:
     assert ouverts == []
     assert [i["categorie"] for i in fermes] == ["cable"]
     assert fermes[0]["clos_le"] is not None
+
+
+# --- La fiche d'un équipement ------------------------------------------------------------
+
+
+def test_un_equipement_par_son_nom() -> None:
+    with TestClient(creer_api(fausse_photo)) as client:
+        reponse = client.get("/equipements/rt-lil")
+    assert reponse.status_code == 200
+    assert reponse.json()["ip"] == "172.20.20.2"
+
+
+def test_equipement_inconnu_reponse_404() -> None:
+    with TestClient(creer_api(fausse_photo)) as client:
+        reponse = client.get("/equipements/rt-paris")
+    assert reponse.status_code == 404
+    assert "rt-paris" in reponse.json()["detail"]
