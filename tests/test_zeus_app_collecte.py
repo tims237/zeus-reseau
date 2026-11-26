@@ -8,7 +8,7 @@ après sa découverte, pour vérifier que la photo est prise même quand ça va 
 
 from datetime import datetime
 
-from zeus_app.collecte import collecter
+from zeus_app.collecte import collecter, decoder_emplacement
 from zeus_core.modeles import TypeEquipement
 
 PHOTO_DE = datetime(2026, 11, 22, 15, 12, 4)
@@ -29,6 +29,11 @@ class FausseSondeLabo:
             "172.20.20.5": ("rt-dc", "SRLinux-v26.7.2 7220 IXR-D2L"),
             "172.20.20.6": None,  # l'imprimante
             "172.20.20.7": ("sw-tombe", "Cisco IOS Software, C1000 Switch"),
+        }
+        # sysName -> sysLocation ; un nom absent n'a pas de sysLocation
+        self.locations: dict[str, str] = {
+            "ap-lil-01": "LIL/BatA/E2/OpenSpace",
+            "sw-tombe": "LIL/BatA/Etage2",  # mal écrit : B13 attend E2
         }
         self.voisins: dict[str, list[dict[str, str]]] = {
             "rt-dc": [
@@ -52,7 +57,11 @@ class FausseSondeLabo:
         info = self.sysinfo.get(ip)
         if info is None:
             return None
-        return {"sysName": info[0], "sysDescr": info[1], "sysLocation": ""}
+        return {
+            "sysName": info[0],
+            "sysDescr": info[1],
+            "sysLocation": self.locations.get(info[0], ""),
+        }
 
     # Pour B2 et B3 (reçoivent un nom)
     def voisins_lldp(self, equipement: str) -> list[dict[str, str]]:
@@ -120,3 +129,27 @@ def test_personne_ne_repond_photo_vide_mais_datee() -> None:
     assert etat.liens == []
     assert etat.releves == []
     assert etat.horodatage == PHOTO_DE
+
+
+# --- B13 : l'emplacement de chaque équipement -------------------------------------
+
+
+def test_collecter_decode_le_syslocation() -> None:
+    etat = collecter(PLAGE, FausseSondeLabo(), PHOTO_DE)
+    borne = next(e for e in etat.equipements if e.id == "ap-lil-01")
+    assert borne.emplacement is not None
+    assert borne.emplacement.site == "LIL"
+    assert borne.emplacement.etage == 2
+
+
+def test_syslocation_mal_ecrit_ne_bloque_pas_la_photo() -> None:
+    # sw-tombe a "LIL/BatA/Etage2" : illisible pour B13. La photo est quand même prise,
+    # le texte brut est gardé, et l'équipement n'a simplement pas d'emplacement.
+    etat = collecter(PLAGE, FausseSondeLabo(), PHOTO_DE)
+    switch = next(e for e in etat.equipements if e.id == "sw-tombe")
+    assert switch.sys_location == "LIL/BatA/Etage2"
+    assert switch.emplacement is None
+
+
+def test_decoder_emplacement_sans_texte_donne_none() -> None:
+    assert decoder_emplacement(None) is None
