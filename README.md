@@ -29,12 +29,16 @@ Le labo
 
 **Phase 2 : l'application visible**, en cours.
 
-- [x] **Le collecteur** (`zeus_app/collecte.py`) : `collecter()` enchaîne B1, B2 et B3, et renvoie la photo du réseau (`EtatReseau`)
+- [x] **Le collecteur** (`zeus_app/collecte.py`) : `collecter()` enchaîne B1, B2 et B3, et renvoie la photo du réseau (`EtatReseau`) ; B1 garde le sysLocation brut et B13 le décode, pour que chaque équipement ait son emplacement (un sysLocation absent ou mal écrit ne bloque jamais la photo)
 - [x] **B11 API** (`zeus_app/api.py`) : `/etat`, `/equipements` et `/liens` renvoient la dernière photo, reprise toutes les minutes ; une collecte qui échoue garde l'ancienne photo
 - [x] **La corrélation** (`zeus_app/correlation.py`) : `correler()` regroupe les événements d'une même panne en un seul incident, en quatre règles (équipement hors ligne et sa cascade, câble coupé, port seul, lenteur)
 - [x] **Le registre des incidents** : à chaque photo, l'API compare avec la précédente, corrèle, garde chaque panne tant qu'elle dure, et la ferme quand la photo la montre réparée ; `/incidents` (ouverts) et `/incidents/historique` (fermés, avec leur durée)
 - [x] La route `/equipements/{nom}`, pour la fiche d'un seul équipement (404 si le nom est inconnu)
-- [ ] **B12 Carte** 2D et 3D, branchée sur l'API
+- [ ] **B12 Carte** 2D et 3D, branchée sur l'API. Choix retenus :
+  - la carte se dessine seule à partir de la découverte, rien n'est placé à la main ;
+  - les positions sont calculées en Python (`placer()`, à venir) et sont stables : le même réseau donne toujours la même carte ;
+  - l'animation reprend le prototype : le scan qui construit la carte, un zoom 2D sur le bâtiment, puis un plan-séquence 3D en vue éclatée (jamais de départ depuis la France) ;
+  - l'information d'abord : la fiche de localisation s'affiche tout de suite, l'animation peut être sautée ou accélérée (temps d'intervention, GTR)
 
 Les phases suivantes : les alertes et la vérification avant clôture (phase 3), puis l'IA, dont B17 Classification des équipements inconnus (phase 4, idées dans `docs/b17-classification.md`).
 

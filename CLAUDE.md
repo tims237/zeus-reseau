@@ -36,7 +36,15 @@ Phase 2 : l'application visible, en cours.
   3. port seul : un `port_down` qui reste ; le port d'un équipement vivant tourné vers un équipement mort est un symptôme, pas un incident ;
   4. lenteur : CPU et latence d'un même équipement → un seul incident de gravité « lent ».
   Les identifiants sont stables (`cable:a/p~b/q`, `equipement:x`, `port:x/p`, `lenteur:x`) : la même panne garde le même id d'un cycle à l'autre. `port_up` et `joignable` ne créent rien : ils serviront à fermer les incidents (phase 3).
-- Reste dans la phase 2 : **B12 Carte 2D/3D**, les prototypes branchés sur l'API (équipements, câbles, incidents réels). Commencer par la logique (quoi, comment, pourquoi), puis donner le code fichier par fichier, qu'il recopie.
+- Fait aussi (PR #18) : l'`Equipement` a un champ `sys_location` (le texte brut) ; B1 le remplit avec ce que la sonde a déjà lu ; `collecter()` le confie à B13 via `decoder_emplacement()` pour remplir `emplacement` (`None` si absent ou illisible : la photo n'est jamais bloquée). B1 n'appelle pas B13 : seul `zeus_app` assemble.
+- En cours : **B12 Carte 2D/3D**. Décisions prises avec Levis :
+  - la carte se dessine seule à partir de la découverte (sites lus dans l'emplacement, câbles de B2, couleurs des incidents) ; rien n'est écrit à la main comme dans le prototype ;
+  - le placement est calculé côté Python : `zeus_app/carte.py`, `placer(photo, racine)`, un modèle de positions dans `zeus_core`, une route `/carte`, et ses tests. Ordre : 1. regrouper les équipements par site (« site inconnu » pour ceux sans emplacement) ; 2. placer les sites en grille, celui de la racine au centre ; 3. placer les équipements d'un site par profondeur dans l'arbre B2 (routeur, switchs, puis bornes et caméras) ; 4. la route `/carte` ; ensuite seulement la page web ;
+  - le placement doit être **stable** (même réseau → mêmes positions, tri par nom, vérifié par un test) : c'est le reproche principal fait à Auvik ; regrouper par site pour les gros réseaux ; plus tard, retenir une position déplacée à la main (phase 3, base de données) ;
+  - l'animation garde celle du prototype (artefact « ZeusRéseau, supervision et localisation ») : scan qui construit la carte, zoom 2D vers le bâtiment, fondu, puis plan-séquence 3D en vue éclatée (le toit se soulève, l'étage se détache, l'équipement sort de la baie). Jamais de départ depuis la France : Levis a rejeté les deux méthodes de la maquette « Zoom panne 3D » ;
+  - l'information d'abord : la fiche de localisation (site, bâtiment, étage, baie, U, port) s'affiche tout de suite ; l'animation (environ 12 s dans le prototype) joue derrière, avec un bouton pour aller au bout et un réglage de vitesse retenu par utilisateur, à cause des délais de GTR ;
+  - plus tard : corriger un emplacement depuis l'interface (beaucoup d'équipements réels n'ont pas de sysLocation correct), et trouver le port d'un équipement sans LLDP par la table des MAC.
+- Prochaine étape : `placer()`, étape 1 (regrouper par site). Commencer par la logique (quoi, comment, pourquoi), puis donner le code fichier par fichier, qu'il recopie.
 - À essayer sur le labo : couper le câble de Lille, voir l'incident sur `/incidents`, le rebrancher, le voir fermé sur `/incidents/historique`.
 - Avertissement connu : Starlette signale que `httpx` est remplacé par `httpx2` pour son client de test ; à vérifier avant de changer.
 
@@ -52,7 +60,7 @@ Ne pas commencer les briques des phases 3 et 4 (alertes, IA) sans qu'il le deman
 
 - `zeus_core/` contient les modèles Pydantic partagés. Toute donnée échangée entre briques y a d'abord un modèle.
 - Chaque brique est un sous-dossier de `briques/` qui ne dépend que de `zeus_core`, jamais d'une autre brique.
-- `zeus_app/` est le chef d'orchestre : lui seul assemble les briques. `zeus_app/collecte.py` : `collecter(plage, sonde, maintenant)` enchaîne B1 → carnet d'adresses → B2 et B3, et renvoie un `EtatReseau` (la photo du réseau). `zeus_app/correlation.py` : `correler()` utilise B2, c'est pourquoi elle est dans `zeus_app` et pas dans `briques/`.
+- `zeus_app/` est le chef d'orchestre : lui seul assemble les briques. `zeus_app/collecte.py` : `collecter(plage, sonde, maintenant)` enchaîne B1 (+ B13 pour l'emplacement) → carnet d'adresses → B2 et B3, et renvoie un `EtatReseau` (la photo du réseau). `zeus_app/correlation.py` : `correler()` utilise B2, c'est pourquoi elle est dans `zeus_app` et pas dans `briques/`.
 - Le code qui touche le réseau passe par une interface (`Protocol`) et vit dans `sondes/`, pour être remplacé par une fausse version dans les tests.
 - La sonde SNMP reçoit une IP pour B1 ; pour B2 et B3, qui travaillent par nom, on lui donne le carnet d'adresses construit par B1 : `sonde.adresses = {e.id: str(e.ip) for e in decouvrir(plage, sonde)}`. Ne jamais écrire les IP du labo à la main : elles changent d'un lancement à l'autre.
 
