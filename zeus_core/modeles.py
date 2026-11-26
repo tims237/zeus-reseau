@@ -79,6 +79,19 @@ class Incident(BaseModel):
     ouvert_le: datetime  # obligatoire : sans date, impossible de mesurer la durée
     clos_le: datetime | None = None  # vide tant que la panne n'est pas résolue
 
+    # Ajoutés pour la corrélation (plusieurs événements -> un seul incident) :
+    categorie: (
+        Literal[
+            "equipement",  # un équipement ne répond plus (et tout ce qui est derrière lui)
+            "cable",  # les deux bouts d'un même câble sont tombés
+            "port",  # un port seul est tombé
+            "lenteur",  # CPU ou latence au-dessus du seuil
+        ]
+        | None
+    ) = None  # None : incident créé à la main, sans passer par la corrélation
+    titre: str = ""  # la phrase lue par l'admin, par exemple « Câble coupé entre … »
+    equipements_touches: list[str] = Field(default_factory=list)  # la cause d'abord
+
     @property
     def est_ouvert(self) -> bool:
         """Vrai tant que l'incident n'a pas été clos.

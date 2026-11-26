@@ -28,7 +28,18 @@ Levis développe ce projet pour apprendre Python, les tests, la CI/CD et surtout
 
 Phase 2 : l'application visible, en cours.
 - Fait : `EtatReseau` (la photo du réseau) ; `zeus_app/collecte.py` (`collecter()`) ; B11 API dans `zeus_app/api.py` (`creer_api(prendre_photo, intervalle_s)` : `/etat`, `/equipements`, `/liens`, 503 tant qu'aucune photo n'a réussi, une collecte ratée est notée dans le journal et garde l'ancienne photo) ; `zeus_app/principal.py` branche l'API sur la vraie sonde (`ZEUS_COMMUNAUTE`, `ZEUS_PLAGE`). Lancer : `ZEUS_COMMUNAUTE=public uvicorn zeus_app.principal:app`.
-- Reste : la corrélation (`/incidents`), puis B12 Carte 2D/3D branchée sur l'API.
+- Fait aussi : le modèle `Incident` complété (`categorie` : equipement, cable, port ou lenteur ; `titre` ; `equipements_touches`, la cause d'abord) ; la corrélation dans `zeus_app/correlation.py` : `correler(evenements, liens, racine)` applique quatre règles, du plus gros au plus petit, et chaque règle saute ce que les précédentes expliquent déjà :
+  1. équipement hors ligne : la cause est celui qui n'est derrière aucun autre équipement hors ligne ; ses conséquences viennent de `equipements_injoignables` (B2) ;
+  2. câble coupé : les deux bouts d'un même câble ont un `port_down` → un seul incident ;
+  3. port seul : un `port_down` qui reste ; le port d'un équipement vivant tourné vers un équipement mort est un symptôme, pas un incident ;
+  4. lenteur : CPU et latence d'un même équipement → un seul incident de gravité « lent ».
+  Les identifiants sont stables (`cable:a/p~b/q`, `equipement:x`, `port:x/p`, `lenteur:x`) : la même panne garde le même id d'un cycle à l'autre. `port_up` et `joignable` ne créent rien : ils serviront à fermer les incidents (phase 3).
+- Reste, à faire par Levis lui-même (il code l'API) :
+  1. faire garder à l'API la photo précédente ; à chaque nouvelle photo, calculer les événements avec `comparer(avant.releves, apres.releves)` et `verifier_seuils(apres.releves)` (B3), puis les incidents avec `correler(evenements, apres.liens, racine)` ; la racine vient d'une variable d'environnement (`ZEUS_RACINE`, `rt-dc` par défaut) ;
+  2. la route `/incidents`, avec ses tests ;
+  3. la route `/equipements/{nom}`, avec ses tests (code déjà expliqué) ;
+  puis B12 Carte 2D/3D branchée sur l'API.
+- Pour ces séances API : il recopie lui-même ; donne-lui le code fichier par fichier, commenté, et explique d'abord la logique (quoi, comment, pourquoi).
 - Avertissement connu : Starlette signale que `httpx` est remplacé par `httpx2` pour son client de test ; à vérifier avant de changer.
 
 Phase 1 : socle et collecte des données, terminée et validée sur le labo à quatre équipements.
@@ -36,7 +47,6 @@ Phase 1 : socle et collecte des données, terminée et validée sur le labo à q
 - Validé sur Containerlab : B1 (les deux routeurs trouvés, de type `routeur`), B13 (sysLocation lu et décodé), B2 (un seul câble `rt-dc` ↔ `rt-lil`, le voisin vu par `mgmt0` ignoré), B3 (une coupure côté Lille donne exactement deux `port_down`, sur `rt-lil` et sur `rt-dc`, et aucune fausse alerte de latence depuis la correction de `latence_ms`) ; labo à quatre : B1 trouve les quatre équipements (`ap-lil-01` en `borne-wifi`), B2 les trois câbles (port de la borne lu `eth1`), et `equipements_injoignables` donne `{sw-lil, ap-lil-01}` si `rt-lil` tombe, `{ap-lil-01}` si `sw-lil` tombe.
 - Limite connue du labo : dans Containerlab, `mgmt0` garde chaque équipement joignable ; la panne en cascade est donc donnée à `equipements_injoignables`, sur la vraie topologie lue par B2.
 - Améliorations de la sonde restant à faire : CPU en SNMP, vrai ping ICMP, SNMP v3, et distinguer un port coupé par l'admin (`port-admin-disabled`) d'une vraie panne.
-- Prochaine étape proposée (phase 2) : regrouper les deux `port_down` d'un même câble (ses deux bouts, connus grâce à B2) en un seul incident, c'est la corrélation.
 - Idée retenue pour plus tard : **B17 Classification** des équipements inconnus (numéro de fabricant du sysObjectID, capacités LLDP, nombre de ports → type + confiance + validation par l'ingénieur ; machine learning en phase 4). Idées détaillées dans `docs/b17-classification.md` (catalogue en données plutôt que dans le code, hauteur en U, identification une seule fois). À faire après l'API, la corrélation et la carte.
 Ne pas commencer les briques des phases 3 et 4 (alertes, IA) sans qu'il le demande.
 
@@ -44,14 +54,14 @@ Ne pas commencer les briques des phases 3 et 4 (alertes, IA) sans qu'il le deman
 
 - `zeus_core/` contient les modèles Pydantic partagés. Toute donnée échangée entre briques y a d'abord un modèle.
 - Chaque brique est un sous-dossier de `briques/` qui ne dépend que de `zeus_core`, jamais d'une autre brique.
-- `zeus_app/` est le chef d'orchestre : lui seul assemble les briques. `zeus_app/collecte.py` : `collecter(plage, sonde, maintenant)` enchaîne B1 → carnet d'adresses → B2 et B3, et renvoie un `EtatReseau` (la photo du réseau).
+- `zeus_app/` est le chef d'orchestre : lui seul assemble les briques. `zeus_app/collecte.py` : `collecter(plage, sonde, maintenant)` enchaîne B1 → carnet d'adresses → B2 et B3, et renvoie un `EtatReseau` (la photo du réseau). `zeus_app/correlation.py` : `correler()` utilise B2, c'est pourquoi elle est dans `zeus_app` et pas dans `briques/`.
 - Le code qui touche le réseau passe par une interface (`Protocol`) et vit dans `sondes/`, pour être remplacé par une fausse version dans les tests.
 - La sonde SNMP reçoit une IP pour B1 ; pour B2 et B3, qui travaillent par nom, on lui donne le carnet d'adresses construit par B1 : `sonde.adresses = {e.id: str(e.ip) for e in decouvrir(plage, sonde)}`. Ne jamais écrire les IP du labo à la main : elles changent d'un lancement à l'autre.
 
 ```
 zeus_core/        modèles partagés (Pydantic)
 briques/          une brique par sous-dossier
-zeus_app/         l'application : collecteur, API B11, point de départ
+zeus_app/         l'application : collecteur, corrélation, API B11, point de départ
 sondes/           code qui parle au réseau (SondeSNMP)
 labo/snmpsim/     faux switch SNMP, utilisé par `pytest -m labo` et la CI
 labo/containerlab/ réseau virtuel (routeurs SR Linux), lancé à la main sous Ubuntu
