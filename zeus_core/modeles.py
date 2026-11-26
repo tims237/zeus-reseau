@@ -53,6 +53,9 @@ class Equipement(BaseModel):
     type: TypeEquipement = TypeEquipement.INCONNU  # la famille, inconnue au départ
     modele: str | None = None  # le produit précis, par exemple "Cisco Catalyst 9200"
     emplacement: Emplacement | None = None  # un modèle dans un modèle
+    # Le sysLocation tel que l'équipement l'a dit, sans le décoder ("LIL/BatA/E2").
+    # B1 le garde ; c'est zeus_app qui le confie à B13 pour remplir emplacement.
+    sys_location: str | None = None
     interfaces: list[Interface] = Field(default_factory=list)  # ses ports, vide au départ
 
 

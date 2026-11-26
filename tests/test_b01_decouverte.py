@@ -17,7 +17,11 @@ class FausseSonde:
 
     def __init__(self) -> None:
         self.reponses: dict[str, dict[str, str] | None] = {
-            "10.3.0.1": {"sysName": "RT-LIL", "sysDescr": "Cisco IOS XE Software, ISR1100"},
+            "10.3.0.1": {
+                "sysName": "RT-LIL",
+                "sysDescr": "Cisco IOS XE Software, ISR1100",
+                "sysLocation": "LIL/BatA/E2/SalleServeur/B1/U12",
+            },
             "10.3.0.2": {"sysName": "SW-LIL", "sysDescr": "Cisco IOS Software, C1000 Switch"},
             "10.3.0.9": None,
         }
@@ -91,3 +95,15 @@ def test_equipement_sans_snmp_garde_son_ip_comme_nom() -> None:
 def test_plage_sans_reponse_donne_une_liste_vide() -> None:
     # Personne ne répond sur 192.168.1.0/28 : aucun équipement trouvé.
     assert decouvrir("192.168.1.0/28", FausseSonde()) == []
+
+
+def test_decouvrir_garde_le_syslocation_brut() -> None:
+    # B1 recopie le texte tel quel, sans le découper : c'est le travail de B13.
+    routeur = decouvrir("10.3.0.0/28", FausseSonde())[0]
+    assert routeur.sys_location == "LIL/BatA/E2/SalleServeur/B1/U12"
+
+
+def test_decouvrir_sans_syslocation_donne_none() -> None:
+    # Le switch n'a pas de sysLocation : on note « rien », pas un texte vide.
+    switch = decouvrir("10.3.0.0/28", FausseSonde())[1]
+    assert switch.sys_location is None
