@@ -27,19 +27,17 @@ Levis développe ce projet pour apprendre Python, les tests, la CI/CD et surtout
 ## État actuel
 
 Phase 2 : l'application visible, en cours.
-- Fait : `EtatReseau` (la photo du réseau) ; `zeus_app/collecte.py` (`collecter()`) ; B11 API dans `zeus_app/api.py` (`creer_api(prendre_photo, intervalle_s)` : `/etat`, `/equipements`, `/liens`, 503 tant qu'aucune photo n'a réussi, une collecte ratée est notée dans le journal et garde l'ancienne photo) ; `zeus_app/principal.py` branche l'API sur la vraie sonde (`ZEUS_COMMUNAUTE`, `ZEUS_PLAGE`). Lancer : `ZEUS_COMMUNAUTE=public uvicorn zeus_app.principal:app`.
+- Fait : `EtatReseau` (la photo du réseau) ; `zeus_app/collecte.py` (`collecter()`) ; **B11 API terminée** dans `zeus_app/api.py` (`creer_api(prendre_photo, racine, intervalle_s, memoire)`) : `/etat`, `/equipements`, `/equipements/{nom}` (404 si inconnu), `/liens`, `/incidents`, `/incidents/historique` ; 503 tant qu'aucune photo n'a réussi ; une collecte ratée est notée dans le journal et garde l'ancienne photo. `zeus_app/principal.py` branche l'API sur la vraie sonde (`ZEUS_COMMUNAUTE`, `ZEUS_PLAGE`, `ZEUS_RACINE`). Lancer : `ZEUS_COMMUNAUTE=public uvicorn zeus_app.principal:app`.
+- Le registre des incidents, dans `Memoire.recevoir()` : à chaque photo, `comparer()` + `verifier_seuils()` (B3) → `correler()` → `setdefault` sur l'id stable (une panne reste tant qu'elle dure, notée une seule fois) ; puis `est_resolu()` regarde l'ÉTAT de la nouvelle photo (pas les événements, qu'on peut rater) et ferme l'incident (`clos_le`) dans `historique`. Seuils partagés : `SEUIL_CPU` = 85, `SEUIL_LATENCE_MS` = 120.
+- Limites connues de B11 : un incident est fermé dès la première photo en bon état (plus tard : plusieurs photos de suite, et la vérification avant clôture) ; registre et historique sont en mémoire, perdus au redémarrage (plus tard : une base de données) ; l'API n'a pas de clé ni de mot de passe (à ajouter avant un vrai client).
 - Fait aussi : le modèle `Incident` complété (`categorie` : equipement, cable, port ou lenteur ; `titre` ; `equipements_touches`, la cause d'abord) ; la corrélation dans `zeus_app/correlation.py` : `correler(evenements, liens, racine)` applique quatre règles, du plus gros au plus petit, et chaque règle saute ce que les précédentes expliquent déjà :
   1. équipement hors ligne : la cause est celui qui n'est derrière aucun autre équipement hors ligne ; ses conséquences viennent de `equipements_injoignables` (B2) ;
   2. câble coupé : les deux bouts d'un même câble ont un `port_down` → un seul incident ;
   3. port seul : un `port_down` qui reste ; le port d'un équipement vivant tourné vers un équipement mort est un symptôme, pas un incident ;
   4. lenteur : CPU et latence d'un même équipement → un seul incident de gravité « lent ».
   Les identifiants sont stables (`cable:a/p~b/q`, `equipement:x`, `port:x/p`, `lenteur:x`) : la même panne garde le même id d'un cycle à l'autre. `port_up` et `joignable` ne créent rien : ils serviront à fermer les incidents (phase 3).
-- Reste, à faire par Levis lui-même (il code l'API) :
-  1. faire garder à l'API la photo précédente ; à chaque nouvelle photo, calculer les événements avec `comparer(avant.releves, apres.releves)` et `verifier_seuils(apres.releves)` (B3), puis les incidents avec `correler(evenements, apres.liens, racine)` ; la racine vient d'une variable d'environnement (`ZEUS_RACINE`, `rt-dc` par défaut) ;
-  2. la route `/incidents`, avec ses tests ;
-  3. la route `/equipements/{nom}`, avec ses tests (code déjà expliqué) ;
-  puis B12 Carte 2D/3D branchée sur l'API.
-- Pour ces séances API : il recopie lui-même ; donne-lui le code fichier par fichier, commenté, et explique d'abord la logique (quoi, comment, pourquoi).
+- Reste dans la phase 2 : **B12 Carte 2D/3D**, les prototypes branchés sur l'API (équipements, câbles, incidents réels). Commencer par la logique (quoi, comment, pourquoi), puis donner le code fichier par fichier, qu'il recopie.
+- À essayer sur le labo : couper le câble de Lille, voir l'incident sur `/incidents`, le rebrancher, le voir fermé sur `/incidents/historique`.
 - Avertissement connu : Starlette signale que `httpx` est remplacé par `httpx2` pour son client de test ; à vérifier avant de changer.
 
 Phase 1 : socle et collecte des données, terminée et validée sur le labo à quatre équipements.

@@ -32,8 +32,8 @@ Le labo
 - [x] **Le collecteur** (`zeus_app/collecte.py`) : `collecter()` enchaîne B1, B2 et B3, et renvoie la photo du réseau (`EtatReseau`)
 - [x] **B11 API** (`zeus_app/api.py`) : `/etat`, `/equipements` et `/liens` renvoient la dernière photo, reprise toutes les minutes ; une collecte qui échoue garde l'ancienne photo
 - [x] **La corrélation** (`zeus_app/correlation.py`) : `correler()` regroupe les événements d'une même panne en un seul incident, en quatre règles (équipement hors ligne et sa cascade, câble coupé, port seul, lenteur)
-- [ ] L'API garde la photo précédente, calcule les événements et les incidents, et les sert sur `/incidents`
-- [ ] La route `/equipements/{nom}`, pour la fiche d'un seul équipement
+- [x] **Le registre des incidents** : à chaque photo, l'API compare avec la précédente, corrèle, garde chaque panne tant qu'elle dure, et la ferme quand la photo la montre réparée ; `/incidents` (ouverts) et `/incidents/historique` (fermés, avec leur durée)
+- [x] La route `/equipements/{nom}`, pour la fiche d'un seul équipement (404 si le nom est inconnu)
 - [ ] **B12 Carte** 2D et 3D, branchée sur l'API
 
 Les phases suivantes : les alertes et la vérification avant clôture (phase 3), puis l'IA, dont B17 Classification des équipements inconnus (phase 4, idées dans `docs/b17-classification.md`).
@@ -76,7 +76,21 @@ Sous Ubuntu, avec le labo Containerlab lancé :
 ZEUS_COMMUNAUTE=public uvicorn zeus_app.principal:app
 ```
 
-Puis ouvrir http://localhost:8000/docs dans le navigateur. La communauté SNMP est un mot de passe : elle se donne au lancement (`ZEUS_COMMUNAUTE`), jamais dans le code. `ZEUS_PLAGE` choisit la plage d'adresses à surveiller (par défaut, celle du labo).
+Puis ouvrir http://localhost:8000/docs dans le navigateur. Les adresses :
+
+| Adresse | Ce qu'elle renvoie |
+| --- | --- |
+| `/etat` | la photo complète du réseau |
+| `/equipements` | les équipements |
+| `/equipements/{nom}` | la fiche d'un équipement (404 s'il est inconnu) |
+| `/liens` | les câbles |
+| `/incidents` | les pannes en cours, de la plus ancienne à la plus récente |
+| `/incidents/historique` | les pannes réparées, avec `ouvert_le` et `clos_le` |
+
+Les réglages se donnent au lancement, jamais dans le code :
+- `ZEUS_COMMUNAUTE` : la communauté SNMP, c'est-à-dire le mot de passe (obligatoire) ;
+- `ZEUS_PLAGE` : la plage d'adresses à surveiller (par défaut, celle du labo) ;
+- `ZEUS_RACINE` : le routeur central, d'où l'on regarde qui est derrière qui (par défaut `rt-dc`).
 
 ## Vérifier le code
 
