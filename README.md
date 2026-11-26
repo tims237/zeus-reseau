@@ -31,7 +31,9 @@ Le labo
 
 - [x] **Le collecteur** (`zeus_app/collecte.py`) : `collecter()` enchaîne B1, B2 et B3, et renvoie la photo du réseau (`EtatReseau`)
 - [x] **B11 API** (`zeus_app/api.py`) : `/etat`, `/equipements` et `/liens` renvoient la dernière photo, reprise toutes les minutes ; une collecte qui échoue garde l'ancienne photo
-- [ ] La corrélation : regrouper les événements d'une même panne en un seul incident, sur `/incidents`
+- [x] **La corrélation** (`zeus_app/correlation.py`) : `correler()` regroupe les événements d'une même panne en un seul incident, en quatre règles (équipement hors ligne et sa cascade, câble coupé, port seul, lenteur)
+- [ ] L'API garde la photo précédente, calcule les événements et les incidents, et les sert sur `/incidents`
+- [ ] La route `/equipements/{nom}`, pour la fiche d'un seul équipement
 - [ ] **B12 Carte** 2D et 3D, branchée sur l'API
 
 Les phases suivantes : les alertes et la vérification avant clôture (phase 3), puis l'IA, dont B17 Classification des équipements inconnus (phase 4, idées dans `docs/b17-classification.md`).
