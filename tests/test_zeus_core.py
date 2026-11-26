@@ -206,3 +206,38 @@ def test_etat_reseau_aller_retour_json() -> None:
     texte = etat.model_dump_json()
     assert '"rt-dc"' in texte
     assert EtatReseau.model_validate_json(texte) == etat
+
+
+# --- Incident : les champs ajoutés pour la corrélation ---------------------------------
+
+
+def test_incident_sans_correlation_garde_ses_valeurs_par_defaut() -> None:
+    # Un incident créé à la main, comme avant la corrélation : rien ne change.
+    inc = Incident(id="1", equipement_id="RT-LIL", gravite="down", ouvert_le=PHOTO_DE)
+    assert inc.categorie is None
+    assert inc.titre == ""
+    assert inc.equipements_touches == []
+
+
+def test_incident_correle() -> None:
+    inc = Incident(
+        id="equipement:rt-lil",
+        equipement_id="rt-lil",
+        gravite="down",
+        ouvert_le=PHOTO_DE,
+        categorie="equipement",
+        titre="rt-lil hors ligne, 2 équipements coupés derrière lui : ap-lil-01, sw-lil",
+        equipements_touches=["rt-lil", "ap-lil-01", "sw-lil"],
+    )
+    assert inc.equipements_touches[0] == "rt-lil"  # la cause d'abord
+
+
+def test_incident_categorie_inconnue_refusee() -> None:
+    with pytest.raises(ValidationError):
+        Incident(
+            id="2",
+            equipement_id="RT-LIL",
+            gravite="down",
+            ouvert_le=PHOTO_DE,
+            categorie="meteo",  # type: ignore[arg-type]
+        )
