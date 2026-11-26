@@ -14,6 +14,7 @@ from zeus_app.collecte import collecter
 from zeus_core.modeles import EtatReseau
 
 PLAGE = os.environ.get("ZEUS_PLAGE", "172.20.20.0/28")  # la plage du labo, par défaut
+RACINE = os.environ.get("ZEUS_RACINE", "rt-dc")  # le routeur central, par défaut celui du labo
 COMMUNAUTE = os.environ.get("ZEUS_COMMUNAUTE")
 if not COMMUNAUTE:
     raise SystemExit("Indique la communauté SNMP : ZEUS_COMMUNAUTE=public uvicorn ...")
@@ -26,4 +27,4 @@ def prendre_photo() -> EtatReseau:
     return collecter(PLAGE, sonde, datetime.now())
 
 
-app = creer_api(prendre_photo, intervalle_s=60)
+app = creer_api(prendre_photo, racine=RACINE, intervalle_s=60)
