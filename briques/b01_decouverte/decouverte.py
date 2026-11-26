@@ -96,6 +96,10 @@ def decouvrir(plage: str, sonde: Sonde) -> list[Equipement]:
                 ip=IPv4Address(ip),
                 type=deviner_type(descr),
                 modele=descr or None,
+                # Le texte brut : B1 ne sait pas le décoder (c'est le travail de B13),
+                # mais il le garde, pour ne pas avoir à le redemander au réseau.
+                sys_location=info.get("sysLocation") or None,
             )
         )
+
     return trouves
